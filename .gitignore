@@ -1,0 +1,8 @@
+# Temporary and editor files
+*.swp
+
+# Build directory
+/build/
+
+# Compile commands
+compile_commands.json
