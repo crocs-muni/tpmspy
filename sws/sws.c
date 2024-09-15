@@ -482,8 +482,6 @@ static
 enum _monitor_ev _monitor_client_recv(unused int epfd, unused struct sockdb **sdbp,
 		unused struct io **ios, struct socket *socket)
 {
-	int recv;
-
 	char message[4096], control[256];
 	struct iovec iov[] = {
 		{ .iov_base = message, .iov_len = sizeof(message) - 1 },
@@ -496,6 +494,7 @@ enum _monitor_ev _monitor_client_recv(unused int epfd, unused struct sockdb **sd
 		.msg_controllen = sizeof(control),
 	};
 
+	int recv;
 	while ((recv = recvmsg(socket->fd, &msg, 0)) > 0) {
 		message[recv] = '\0';
 		printf("\x1b[36m[%2d]\x1b[0m %s", socket->fd, message);
@@ -663,14 +662,13 @@ bool _std_cmd_direct_msg(struct cli_cmd *cmd, const struct sockdb *sockdb)
 static
 const char *_std_cmd_list_type(enum socket_type type)
 {
-	switch (type) {
-	case SOCKET_TYPE_CLIENT:
-		return "client";
-	case SOCKET_TYPE_SERVER:
-		return "server";
-	}
+	static char buffer[256];
+	socket_type_str3(sizeof(buffer), buffer, (struct socket_type_str_opt){
+		.type = type,
+		.flags = STSOF_NONE,
+	});
 
-	return "unknown";
+	return buffer;
 }
 
 static

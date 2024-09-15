@@ -15,9 +15,9 @@
 	errx(EXIT_FAILURE, "%s(): BUG: " FORMAT, __func__ __VA_OPT__(,) __VA_ARGS__)
 
 #define warn_v(V, ...) \
-	(warn(__VA_ARGS__), (V))
+	((void) warn(__VA_ARGS__), (V))
 #define warnx_v(V, ...) \
-	(warnx(__VA_ARGS__), (V))
+	((void) warnx(__VA_ARGS__), (V))
 #define warn_jmp(L, ...) \
 	do { warn(__VA_ARGS__); goto L; } while (0)
 #define warnx_jmp(L, ...) \

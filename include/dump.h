@@ -3,11 +3,7 @@
 
 #include <stddef.h>
 
-enum socket_kind {
-	SOCKIND_QEMU_SERVER = 1 << 0,
-	SOCKIND_QEMU_CLIENT = 1 << 1,
-	SOCKIND_TPM_CLIENT  = 1 << 2,
-};
+#include "socket.h"
 
 enum dump_packet_kind {
 	DUMP_TRANSFER,
@@ -22,16 +18,31 @@ struct dump_packet {
 struct dump_packet_tx {
 	enum dump_packet_kind dp_kind;
 
-	enum socket_kind dp_tx_src_kind;
+	enum socket_type dp_tx_src_type;
 	int dp_tx_src;
-	enum socket_kind dp_tx_dst_kind;
+	enum socket_type dp_tx_dst_type;
 	int dp_tx_dst;
 };
+
+#define DUMP_TX(SRC, DST) \
+	(struct dump_packet_tx){ \
+		.dp_kind = DUMP_TRANSFER, \
+		.dp_tx_src_type = (SRC)->sock.type, \
+		.dp_tx_src = (SRC)->sock.fd, \
+		.dp_tx_dst_type = (DST)->sock.type, \
+		.dp_tx_dst = (DST)->sock.fd, \
+	}
 
 struct dump_packet_data {
 	enum dump_packet_kind dp_kind;
 
 	size_t dp_data_len;
 };
+
+#define DUMP_DATA(LEN) \
+	(struct dump_packet_data){ \
+		.dp_kind = DUMP_DATA, \
+		.dp_data_len = (LEN), \
+	}
 
 #endif // DUMP_H

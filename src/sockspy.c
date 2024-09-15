@@ -18,12 +18,15 @@
 #include <limits.h>
 #include <poll.h>
 #include <sys/socket.h>
+#include <sys/uio.h>
 #include <unistd.h>
 
 #include <ev.h>
 
+#include "conntrack.h"
 #include "defs.h"
 #include "dump.h"
+#include "msg.h"
 #include "socket.h"
 
 #define CONFIG_OUTPUT_COLS 20
@@ -31,61 +34,56 @@
 struct options {
 	struct io log;
 	struct io dump;
+
+	const char *swtpm_path;
+	const char *qemu_path;
 };
 
-struct ev_conntrack {
-	bool upstream;
-	size_t clients;
-};
-
-struct ev_sockdata {
-	struct ev_sockdata *_next;
-	struct ev_context *context;
+struct socket_watcher {
+	struct socket_watcher *_next;
+	struct context *ctx;
 
 	struct socket sock;
-	enum socket_kind kind;
 	ev_io watcher;
-
-	const char *label;
 };
 
-
-struct ev_context {
-	struct ev_sockdata *socks;
-	struct ev_conntrack conns;
+struct context {
+	struct socket_watcher *socks;
+	struct conntrack *conns;
 
 	char *buffer;
 	size_t buffer_size;
 	ev_signal w_int;
+
 	const struct options *options;
 };
 
+/* Forward declarations */
+typedef void (ev_io_cb)(struct ev_loop *loop, ev_io *watcher, int revents);
+
 private
-void _evc_add_socket(struct ev_context *evc, struct ev_sockdata *sockdata)
+bool socket_watcher_io_start(struct ev_loop *loop, const struct socket_watcher *data,
+		ev_io_cb *cb);
+private
+void socket_watcher_io_stop(struct ev_loop *loop, struct socket_watcher *sw);
+
+
+private
+void _context_link_sw(struct context *ctx, struct socket_watcher *sw)
 {
-	assert(evc != NULL);
-	assert(sockdata != NULL);
+	assert(ctx != NULL);
+	assert(sw != NULL);
 
-	sockdata->_next = NULL;
-	if (evc->socks == NULL) {
-		evc->socks = sockdata;
-		return;
-	}
-
-	struct ev_sockdata *current = evc->socks;
-	while (current->_next != NULL)
-		current = current->_next;
-
-	current->_next = sockdata;
+	sw->_next = ctx->socks;
+	ctx->socks = sw;
 }
 
-private
-struct ev_sockdata * _sock_find(struct ev_context *evc, int fd)
+struct socket_watcher *context_find_socket(struct context *ctx, int fd)
 {
-	assert(evc != NULL);
+	assert(ctx != NULL);
 	assert(fd >= 0);
 
-	struct ev_sockdata *cursor = evc->socks;
+	struct socket_watcher *cursor = ctx->socks;
 	while (cursor != NULL) {
 		if (cursor->sock.fd == fd)
 			return cursor;
@@ -96,60 +94,87 @@ struct ev_sockdata * _sock_find(struct ev_context *evc, int fd)
 	return NULL;
 }
 
-const struct ev_sockdata *evc_add(struct ev_context *evc, const struct socket *sock,
-		enum socket_kind kind, const char *label)
+const struct socket_watcher *context_add_socket(struct context *ctx,
+		const struct socket *sock)
 {
-	assert(evc != NULL);
+	assert(ctx != NULL);
 	assert(sock != NULL);
 
-	struct ev_sockdata *entry = malloc(sizeof(*entry));
+	struct socket_watcher *sw = malloc(sizeof(*sw));
 
-	if (entry == NULL)
+	if (sw == NULL)
 		return NULL;
 
-	entry->context = evc;
-	entry->sock = *sock;
-	entry->kind = kind;
-	entry->label = label;
+	sw->ctx = ctx;
+	sw->sock = *sock;
 
-	_evc_add_socket(evc, entry);
-	return entry;
+	_context_link_sw(ctx, sw);
+	return sw;
 }
 
-struct ev_sockdata *evc_next(struct ev_context *evc, struct ev_sockdata *cursor,
-		enum socket_kind kind)
+void context_remove_socket(struct context *ctx, const struct socket_watcher *sw)
 {
-	cursor = cursor == NULL ? evc->socks : cursor->_next;
+	assert(ctx != NULL);
+	assert(sw != NULL);
 
-	while (cursor != NULL) {
-		if ((cursor->kind & kind) != 0)
-			return cursor;
+	if (ctx->socks == sw) {
+		ctx->socks = sw->_next;
+	} else {
+		bool found = false;
 
-		cursor = cursor->_next;
+		for (struct socket_watcher *cursor = ctx->socks; cursor != NULL && !found;
+				cursor = cursor->_next) {
+			if (cursor->_next == sw) {
+				found = true;
+				cursor->_next = sw->_next;
+			}
+		}
+
+		if (!found) {
+			bug("Socket not found");
+			return;
+		}
 	}
 
-	return NULL;
+	free((void *) sw);
 }
 
-#define each_socket(VAR, EVC, KIND) \
-	struct ev_sockdata *VAR = evc_next((EVC), NULL, (KIND)); VAR != NULL; \
-		VAR = evc_next((EVC), VAR, (KIND))
+void context_close_socket(struct context *ctx, struct ev_loop *loop,
+		struct socket_watcher *sw)
+{
+	socket_close(&sw->sock);
+	socket_watcher_io_stop(loop, sw);
+	context_remove_socket(ctx, sw);
+}
+
+void context_clear_sockets(struct context *ctx)
+{
+	while (ctx->socks != NULL)
+		context_remove_socket(ctx, ctx->socks);
+}
+
+void context_cleanup(struct context *ctx)
+{
+	context_clear_sockets(ctx);
+
+	free(ctx->buffer);
+	ctx->buffer = NULL;
+}
 
 private
-bool _sock_alloc(struct ev_context *context)
+bool _context_make_buffer(struct context *ctx)
 {
-	if (context->buffer != NULL)
+	if (ctx->buffer != NULL)
 		return true;
 
 	long page_size = sysconf(_SC_PAGESIZE);
-	context->buffer_size = 4 * page_size;
-	return (context->buffer = malloc(context->buffer_size)) != NULL;
+	ctx->buffer_size = 4 * page_size;
+	return (ctx->buffer = malloc(ctx->buffer_size)) != NULL;
 }
 
-typedef void (ev_io_cb)(struct ev_loop *loop, ev_io *watcher, int revents);
-
 private
-bool evc_io(struct ev_loop *loop, const struct ev_sockdata *data, ev_io_cb *cb)
+bool socket_watcher_io_start(struct ev_loop *loop, const struct socket_watcher *data,
+		ev_io_cb *cb)
 {
 	/* Safe typecast: We know we own the data, we just want to prevent
 	 * the rest of the code from modifying attributes by accident. */
@@ -164,14 +189,22 @@ bool evc_io(struct ev_loop *loop, const struct ev_sockdata *data, ev_io_cb *cb)
 }
 
 private
-bool _write_dump(struct ev_sockdata *data, size_t pckt_len, const void *pckt)
+void socket_watcher_io_stop(struct ev_loop *loop, struct socket_watcher *sw)
 {
-	const struct io *dump = &data->context->options->dump;
+	ev_io_stop(loop, &sw->watcher);
+}
 
+private
+bool _splice_write_dump(const struct io *dump, int iovcnt, const struct iovec iov[iovcnt])
+{
 	if (dump->type != IO_STD)
 		return true;
 
-	return write(dump->std, pckt, pckt_len) == (ssize_t) pckt_len;
+	ssize_t total = 0;
+	for (int i = 0; i < iovcnt; i++)
+		total += iov[i].iov_len;
+
+	return writev(dump->std, iov, iovcnt) == total;
 }
 
 #define log(LOG, FORMAT, ...) \
@@ -179,62 +212,64 @@ bool _write_dump(struct ev_sockdata *data, size_t pckt_len, const void *pckt)
 		dprintf((LOG)->std, FORMAT "\n" __VA_OPT__(,) __VA_ARGS__)
 
 private
-ssize_t _socket_splice(struct ev_sockdata *data, enum socket_kind target)
+ssize_t _socket_recv(struct context *ctx, struct socket_watcher *src, struct socket_watcher *dst)
 {
-	if (!_sock_alloc(data->context))
-		err(EXIT_FAILURE, "Cannot allocate socket buffer");
+	const struct io *log = &ctx->options->log;
+	const struct io *dump = &ctx->options->dump;
 
-	const struct io *log = &data->context->options->log;
+	char message[4096], control[256];
+	struct iovec iov[] = {
+		{ .iov_base = message, .iov_len = sizeof(message) },
+	};
 
-	log(log, "IO from %2d %s", data->sock.fd, data->label);
+	struct msghdr msg = {
+		.msg_iov = iov,
+		.msg_iovlen = array_size(iov),
+		.msg_control = control,
+		.msg_controllen = sizeof(control),
+	};
 
-	ssize_t rd, total = 0;
-	while ((rd = read(data->sock.fd, data->context->buffer, data->context->buffer_size)) > 0) {
-		total += rd;
+	ssize_t total = 0;
 
-		for (each_socket(sock, data->context, target)) {
-			log(log, "   to   %2d %s", sock->sock.fd, sock->label);
-			struct dump_packet_tx tx = {
-				.dp_kind = DUMP_TRANSFER,
-				.dp_tx_src_kind = data->kind,
-				.dp_tx_src = data->sock.fd,
-				.dp_tx_dst_kind = sock->kind,
-				.dp_tx_dst = sock->sock.fd,
-			};
+	ssize_t recv;
+	while ((recv = recvmsg(src->sock.fd, &msg, 0)) > 0) {
+		ssize_t logsize = message[recv - 1] == '\n' ? recv - 1 : recv;
+		log(log, "   text %2d: %.*s", src->sock.fd, (int) logsize, message);
 
-			_write_dump(data, sizeof(tx), &tx);
+		total += recv;
 
-			ssize_t wr = 0, written = 0;
-			while (written < rd && (wr = write(sock->sock.fd,
-					data->context->buffer + written, rd - written)) > 0) {
-				written += wr;
-			}
+		for (struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msg); cmsg != NULL;
+				cmsg = CMSG_NXTHDR(&msg, cmsg)) {
+			if (cmsg->cmsg_level != SOL_SOCKET || cmsg->cmsg_type != SCM_RIGHTS)
+				continue;
 
-			if (wr == -1)
-				log(log, "IO err  %2d %s: %s", sock->sock.fd, sock->label, strerror(errno));
+			printf("   HDR FOUND\n");
+			// TODO: _monitor_client_accept_fd(sdbp, socket, cmsg, epfd, ios);
 		}
 
-		struct dump_packet_data dt = {
-			.dp_kind = DUMP_DATA,
-			.dp_data_len = rd,
-		};
+		msg.msg_iov[0].iov_len = recv;
+		if (sendmsg(dst->sock.fd, &msg, MSG_NOSIGNAL) == -1)
+			warn("sendmsg()");
 
-		_write_dump(data, sizeof(dt), &dt);
-		_write_dump(data, rd, data->context->buffer);
+		_splice_write_dump(dump, 3, (struct iovec[3]){
+			{ .iov_len = sizeof(struct dump_packet_tx), .iov_base = &DUMP_TX(src, dst) },
+			{ .iov_len = sizeof(struct dump_packet_data), .iov_base = &DUMP_DATA(recv) },
+			msg.msg_iov[0],
+		});
 	}
 
 	log(log, "   size %8zd", total);
 
-	if (rd == -1) {
+	if (recv == -1) {
 		if (errno == EAGAIN || errno == EWOULDBLOCK)
 			return total;
 
-		log(log, "FD err  %2d %s: %s", data->sock.fd, data->label, strerror(errno));
+		log(log, "FD err  %2d: %s", src->sock.fd, strerror(errno));
 		return -1;
 	}
 
-	if (rd == 0) {
-		log(log, "FD down %2d %s", data->sock.fd, data->label);
+	if (recv == 0) {
+		log(log, "FD down %2d", src->sock.fd);
 		return -1;
 	}
 
@@ -242,79 +277,206 @@ ssize_t _socket_splice(struct ev_sockdata *data, enum socket_kind target)
 }
 
 private
-void _evc_check_exit(struct ev_loop *loop, struct ev_context *context)
+void _socket_splice_disconnect(struct ev_loop *loop, struct context *ctx, struct conntrack_entry *link,
+		struct socket_watcher *src, struct socket_watcher *dst)
 {
-	if (!context->conns.upstream) {
-		fprintf(stderr, "TPM socket disconnected, quitting\n");
+	const struct io *log = &ctx->options->log;
+
+	if (link != NULL) {
+		log(log, "   xlnk %2d <-> %2d", link->a, link->b);
+		conntrack_remove(&ctx->conns, link);
+	}
+
+	struct socket_watcher *watchers[] = { src, dst };
+	for (size_t i = 0; i < array_size(watchers); i++) {
+		if (watchers[i] == NULL)
+			continue;
+
+		log(log, "IO clse %2d", watchers[i]->sock.fd);
+		context_close_socket(ctx, loop, watchers[i]);
+	}
+}
+
+private
+ssize_t _socket_splice(struct ev_loop *loop, struct socket_watcher *src)
+{
+	if (!_context_make_buffer(src->ctx))
+		err(EXIT_FAILURE, "Cannot allocate socket buffer");
+
+	struct context *ctx = src->ctx;
+	const struct io *log = &ctx->options->log;
+
+	socket_type_str(ctx->buffer_size, ctx->buffer, src->sock.type);
+	log(log, "IO from %2d [type %02x %s]", src->sock.fd, src->sock.type, ctx->buffer);
+
+	struct conntrack_entry *link = conntrack_find_mut(&ctx->conns, NULL, src->sock.fd);
+
+	if (link == NULL) {
+		bug("No connection found for %d", src->sock.fd);
+		context_close_socket(ctx, loop, src);
+		return -1;
+	}
+
+	int dst_fd = conntrack_other(*link, src->sock.fd);
+	struct socket_watcher *dst = NULL;
+
+	if ((dst = context_find_socket(ctx, dst_fd)) == NULL) {
+		bug("Socket watcher for %d connected to %d not found", dst_fd, src->sock.fd);
+		context_close_socket(ctx, loop, src);
+		return -1;
+	}
+
+	socket_type_str(ctx->buffer_size, ctx->buffer, dst->sock.type);
+	log(log, "   to   %2d [type %02x %s]", dst->sock.fd, dst->sock.type, ctx->buffer);
+	ssize_t total = _socket_recv(ctx, src, dst);
+
+	if (total < 0)
+		_socket_splice_disconnect(loop, ctx, link, src, dst);
+
+	return total;
+}
+
+private
+void _handle_socket_check_exit(struct ev_loop *loop, struct context *ctx)
+{
+	if (ctx->socks == NULL || (ctx->socks->_next == NULL && ctx->socks->sock.type & SOCKET_TYPE_SERVER)) {
+		fprintf(stderr, "No sockets left, quitting\n");
 		ev_break(loop, EVBREAK_ALL);
 	}
 }
 
 private
-void qemu_splice(struct ev_loop *loop, ev_io *watcher, unused int revents)
+void handle_socket(struct ev_loop *loop, ev_io *watcher, unused int revents)
 {
-	if (_socket_splice(watcher->data, SOCKIND_TPM_CLIENT) == -1) {
-		ev_io_stop(loop, watcher);
-		struct ev_sockdata *data = watcher->data;
-		data->context->conns.clients--;
+	struct socket_watcher *data = watcher->data;
+	struct context *ctx = data->ctx;
 
-		_evc_check_exit(loop, data->context);
-	}
+	if (_socket_splice(loop, watcher->data) == -1)
+		_handle_socket_check_exit(loop, ctx);
 }
 
 private
-void tpm_splice(struct ev_loop *loop, ev_io *watcher, unused int revents)
+bool _qemu_downlink_accept(struct socket *sock, const struct socket_watcher *sw)
 {
-	if (_socket_splice(watcher->data, SOCKIND_QEMU_CLIENT) == -1) {
-		ev_io_stop(loop, watcher);
+	struct sockaddr_storage addr;
+	socklen_t addrlen = sizeof(addr);
 
-		struct ev_sockdata *data = watcher->data;
-		data->context->conns.upstream = false;
+	if ((sock->fd = accept(sw->watcher.fd, (struct sockaddr *) &addr, &addrlen)) == -1)
+		return false;
 
-		_evc_check_exit(loop, data->context);
-	}
+	int flags = fcntl(sock->fd, F_GETFL);
+	/* This can only fail if we pass ‹fcntl()› an invalid fd or argument. */
+	assert(flags != -1);
+
+	if (fcntl(sock->fd, F_SETFL, flags | O_NONBLOCK) == -1)
+		err(EXIT_FAILURE, "QEMU: fcntl()");
+
+	sock->type = SOCKET_TYPE_CLIENT;
+	sock->source = (struct socket_source) {
+		.type = SOCKET_SOURCE_FD,
+		.fd = sw->watcher.fd,
+	};
+
+	return true;
 }
 
 private
-void qemu_srv_accept(struct ev_loop *loop, ev_io *watcher, int revents)
+const struct socket_watcher *_qemu_setup_downlink(const struct socket_watcher *sw_qemu_server)
+{
+	struct socket sock_qemu_client;
+	if (!_qemu_downlink_accept(&sock_qemu_client, sw_qemu_server))
+		return warn_v(NULL, "_qemu_setup_downlink(): accept()");
+
+	sock_qemu_client.type |= SOCKET_LINK_QEMU;
+
+	const struct socket_watcher *sw_qemu_client = context_add_socket(sw_qemu_server->ctx,
+			&sock_qemu_client);
+
+	if (sw_qemu_client == NULL)
+		warn_jmp(close_client, "_qemu_setup_downlink(): context_add_socket()");
+
+	return sw_qemu_client;
+
+close_client:
+	close(sock_qemu_client.fd);
+	return NULL;
+}
+
+private
+const struct socket_watcher *_qemu_setup_uplink(struct context *ctx)
+{
+	struct socket sock_tpm;
+	if (!socket_client(ctx->options->swtpm_path, &sock_tpm))
+		return warn_v(NULL, "_qemu_setup_uplink(): Cannot connect to swTPM");
+
+	sock_tpm.type |= SOCKET_LINK_SWTPM;
+
+	const struct socket_watcher *sw_tpm = context_add_socket(ctx, &sock_tpm);
+
+	if (sw_tpm == NULL)
+		warn_jmp(close_socket, "_qemu_setup_uplink(): context_add_socket()");
+
+	return sw_tpm;
+
+close_socket:
+	close(sock_tpm.fd);
+	return NULL;
+}
+
+private
+void handle_qemu_connect(struct ev_loop *loop, ev_io *watcher, int revents)
 {
 	if ((revents & (POLL_ERR | POLL_HUP)) != 0)
 		errx(EXIT_FAILURE, "QEMU: ERR or HUP");
 
-	struct socket *sock_client = malloc(sizeof(*sock_client));
-	if (sock_client == NULL)
-		err(EXIT_FAILURE, "QEMU: accept()");
+	const struct socket_watcher *sw_qemu_server = watcher->data;
+	const struct io *log = &sw_qemu_server->ctx->options->log;
 
-	struct ev_sockdata *data = watcher->data;
+	const struct socket_watcher *sw_qemu_client = _qemu_setup_downlink(sw_qemu_server);
 
-	struct sockaddr_storage addr;
-	socklen_t addrlen = sizeof(addr);
+	if (sw_qemu_client == NULL) {
+		warn("handle_qemu_connect(): Failed to accept a new client");
+		return;
+	}
 
-	if ((sock_client->fd = accept(watcher->fd, (struct sockaddr *) &addr, &addrlen)) == -1)
-		err(EXIT_FAILURE, "QEMU: accept()");
+	char buffer[256];
+	socket_type_str(sizeof(buffer), buffer, sw_qemu_server->sock.type);
+	log(log, "FD conn %2d [type %02x %s]", sw_qemu_server->sock.fd, sw_qemu_server->sock.type, buffer);
 
-	int flags = fcntl(sock_client->fd, F_GETFL);
-	/* This can only fail if we pass ‹fcntl()› an invalid fd or argument. */
-	assert(flags != -1);
+	socket_type_str(sizeof(buffer), buffer, sw_qemu_client->sock.type);
+	log(log, "   lnk1 %2d [type %02x %s]", sw_qemu_client->sock.fd, sw_qemu_client->sock.type, buffer);
 
-	if (fcntl(sock_client->fd, F_SETFL, flags | O_NONBLOCK) == -1)
-		err(EXIT_FAILURE, "QEMU: fcntl()");
+	const struct socket_watcher *sw_tpm = _qemu_setup_uplink(sw_qemu_server->ctx);
 
-	sock_client->source = (struct socket_source) {
-		.type = SOCKET_SOURCE_FD,
-		.fd = watcher->fd,
+	if (sw_tpm == NULL) {
+		warn("handle_qemu_connect(): Failed to connect to swTPM");
+		goto fail_qemu_socket;
+	}
+
+	socket_type_str(sizeof(buffer), buffer, sw_tpm->sock.type);
+	log(log, "   lnk2 %2d [type %02x %s]", sw_tpm->sock.fd, sw_tpm->sock.type, buffer);
+
+	struct conntrack_entry new_connection = {
+		sw_qemu_client->sock.fd,
+		sw_tpm->sock.fd,
 	};
 
-	const struct io *log = &data->context->options->log;
-	log(log, "FD conn %2d %s", data->sock.fd, data->label);
-	log(log, "   acpt %2d", sock_client->fd);
+	if (!conntrack_add(&sw_qemu_server->ctx->conns, new_connection)) {
+		warn("handle_qemu_connect(): Conntrack failure");
+		goto fail_swtpm_socket;
+	}
 
-	const struct ev_sockdata *sd_client;
-	if ((sd_client = evc_add(data->context, sock_client, SOCKIND_QEMU_CLIENT, "qemu(client)")) == NULL)
-		err(EXIT_FAILURE, "QEMU: evc_add()");
+	socket_watcher_io_start(loop, sw_qemu_client, &handle_socket);
+	socket_watcher_io_start(loop, sw_tpm, &handle_socket);
+	return;
 
-	evc_io(loop, sd_client, &qemu_splice);
-	data->context->conns.clients++;
+fail_swtpm_socket:
+	close(sw_tpm->sock.fd);
+	context_remove_socket(sw_qemu_server->ctx, sw_tpm);
+
+fail_qemu_socket:
+	close(sw_qemu_client->sock.fd);
+	context_remove_socket(sw_qemu_server->ctx, sw_qemu_client);
 }
 
 typedef void (signal_cb_t)(struct ev_loop *, ev_signal *, int);
@@ -327,7 +489,7 @@ void stop_cb(struct ev_loop *loop, unused struct ev_signal *watcher, unused int 
 }
 
 private inline
-bool evc_signal(struct ev_loop *loop, struct ev_signal *watcher, int signum, signal_cb_t *cb)
+bool setup_signal(struct ev_loop *loop, struct ev_signal *watcher, int signum, signal_cb_t *cb)
 {
 	ev_signal_init(watcher, cb, signum);
 	ev_signal_start(loop, watcher);
@@ -335,31 +497,31 @@ bool evc_signal(struct ev_loop *loop, struct ev_signal *watcher, int signum, sig
 }
 
 private
-bool run_relay(const struct options *options, const struct socket *sock_qemu_srv,
-		const struct socket *sock_tpm)
+bool run_relay(const struct options *options, const struct socket *sock_qemu_srv)
 {
-	struct ev_context evc = { .options = options };
-	const struct ev_sockdata *sd_qemu_srv, *sd_tpm;
+	struct context evc = { .options = options };
 
-	if ((sd_qemu_srv = evc_add(&evc, sock_qemu_srv, SOCKIND_QEMU_SERVER, "qemu(srv)")) == NULL)
+	if (!conntrack_init(&evc.conns))
+		err(EXIT_FAILURE, "Cannot set up connection tracking");
+
+	const struct socket_watcher *sd_qemu_srv;
+	if ((sd_qemu_srv = context_add_socket(&evc, sock_qemu_srv)) == NULL)
 		err(EXIT_FAILURE, "Cannot add QEMU server socket");
-
-	if ((sd_tpm = evc_add(&evc, sock_tpm, SOCKIND_TPM_CLIENT, "swtpm")) == NULL)
-		err(EXIT_FAILURE, "Cannot add swtpm socket socket");
 
 	struct ev_loop *loop = ev_loop_new(EVFLAG_AUTO | EVFLAG_SIGNALFD);
 
-	if (!evc_io(loop, sd_qemu_srv, &qemu_srv_accept) || !evc_io(loop, sd_tpm, &tpm_splice))
-		err(EXIT_FAILURE, "Cannot add EV watchers to the loop");
+	if (!socket_watcher_io_start(loop, sd_qemu_srv, &handle_qemu_connect))
+		err(EXIT_FAILURE, "Cannot add QEMU event watcher to the loop");
 
-	evc.conns.upstream = true;
-
-	if (!evc_signal(loop, &evc.w_int, SIGINT, &stop_cb))
+	if (!setup_signal(loop, &evc.w_int, SIGINT, &stop_cb))
 		warn("Failed to setup SIGINT handler");
-	if (!evc_signal(loop, &evc.w_int, SIGTERM, &stop_cb))
+	if (!setup_signal(loop, &evc.w_int, SIGTERM, &stop_cb))
 		warn("Failed to setup SIGTERM handler");
 
 	ev_run(loop, 0);
+
+	conntrack_destroy(&evc.conns);
+	context_cleanup(&evc);
 
 	return true;
 }
@@ -430,6 +592,9 @@ int main(int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 
+	options.swtpm_path = argv[1];
+	options.qemu_path = argv[2];
+
 	int status = EXIT_FAILURE;
 
 	if (options.log.type == IO_CLOSED) {
@@ -437,28 +602,22 @@ int main(int argc, char *argv[])
 		options.log.std = STDOUT_FILENO;
 	}
 
-	struct socket sock_swtpm, sock_qemu_srv;
-	if (!sock_client(argv[1], &sock_swtpm)) {
-		warn("%s: Cannot start client", argv[1]);
+	struct socket sock_qemu_srv;
+
+	if (!socket_server(options.qemu_path, &sock_qemu_srv)) {
+		warn("%s: Cannot start server", argv[2]);
 		goto leave;
 	}
 
-	if (!sock_server(argv[2], &sock_qemu_srv)) {
-		warn("%s: Cannot start server", argv[2]);
-		goto close_sock_swtpm;
-	}
+	sock_qemu_srv.type |= SOCKET_LINK_QEMU;
 
-	if (!run_relay(&options, &sock_qemu_srv, &sock_swtpm)) {
+	if (!run_relay(&options, &sock_qemu_srv)) {
 		goto close_sock_qemu;
 	}
 
 close_sock_qemu:
 	if (!socket_close(&sock_qemu_srv))
 		warn("%s", sock_qemu_srv.source.path);
-
-close_sock_swtpm:
-	if (!socket_close(&sock_swtpm))
-		warn("%s", sock_swtpm.source.path);
 
 leave:
 	return status;
