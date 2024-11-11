@@ -50,6 +50,7 @@ struct socket_watcher {
 struct context {
 	struct socket_watcher *socks;
 	struct conntrack *conns;
+	struct ev_loop *loop;
 
 	char *buffer;
 	size_t buffer_size;
@@ -62,11 +63,23 @@ struct context {
 typedef void (ev_io_cb)(struct ev_loop *loop, ev_io *watcher, int revents);
 
 private
-bool socket_watcher_io_start(struct ev_loop *loop, const struct socket_watcher *data,
-		ev_io_cb *cb);
-private
-void socket_watcher_io_stop(struct ev_loop *loop, struct socket_watcher *sw);
+void handle_socket(struct ev_loop *loop, ev_io *watcher, unused int revents);
 
+private
+bool socket_watcher_io_start(const struct socket_watcher *sw, ev_io_cb *cb);
+private
+void socket_watcher_io_stop(struct socket_watcher *sw);
+
+private inline
+void _fd_ensure_nonblock(int fd)
+{
+	int flags = fcntl(fd, F_GETFL);
+	/* This can only fail if we pass ‹fcntl()› an invalid fd or argument. */
+	assert(flags != -1);
+
+	if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1)
+		BUG("fcntl(%d, F_SETFL, +O_NONBLOCK)", fd);
+}
 
 private
 void _context_link_sw(struct context *ctx, struct socket_watcher *sw)
@@ -94,7 +107,7 @@ struct socket_watcher *context_find_socket(struct context *ctx, int fd)
 	return NULL;
 }
 
-const struct socket_watcher *context_add_socket(struct context *ctx,
+struct socket_watcher *context_add_socket(struct context *ctx,
 		const struct socket *sock)
 {
 	assert(ctx != NULL);
@@ -139,11 +152,10 @@ void context_remove_socket(struct context *ctx, const struct socket_watcher *sw)
 	free((void *) sw);
 }
 
-void context_close_socket(struct context *ctx, struct ev_loop *loop,
-		struct socket_watcher *sw)
+void context_close_socket(struct context *ctx, struct socket_watcher *sw)
 {
 	socket_close(&sw->sock);
-	socket_watcher_io_stop(loop, sw);
+	socket_watcher_io_stop(sw);
 	context_remove_socket(ctx, sw);
 }
 
@@ -173,25 +185,24 @@ bool _context_make_buffer(struct context *ctx)
 }
 
 private
-bool socket_watcher_io_start(struct ev_loop *loop, const struct socket_watcher *data,
-		ev_io_cb *cb)
+bool socket_watcher_io_start(const struct socket_watcher *sw, ev_io_cb *cb)
 {
 	/* Safe typecast: We know we own the data, we just want to prevent
 	 * the rest of the code from modifying attributes by accident. */
-	ev_io *watcher = (ev_io *) &data->watcher;
+	ev_io *watcher = (ev_io *) &sw->watcher;
 
 	ev_init(watcher, cb);
-	ev_io_set(watcher, data->sock.fd, EV_READ);
+	ev_io_set(watcher, sw->sock.fd, EV_READ);
 
-	watcher->data = (void *) data;
-	ev_io_start(loop, watcher);
+	watcher->data = (void *) sw;
+	ev_io_start(sw->ctx->loop, watcher);
 	return true;
 }
 
 private
-void socket_watcher_io_stop(struct ev_loop *loop, struct socket_watcher *sw)
+void socket_watcher_io_stop(struct socket_watcher *sw)
 {
-	ev_io_stop(loop, &sw->watcher);
+	ev_io_stop(sw->ctx->loop, &sw->watcher);
 }
 
 private
@@ -210,6 +221,88 @@ bool _splice_write_dump(const struct io *dump, int iovcnt, const struct iovec io
 #define log(LOG, FORMAT, ...) \
 	if ((LOG)->type == IO_STD) \
 		dprintf((LOG)->std, FORMAT "\n" __VA_OPT__(,) __VA_ARGS__)
+
+private
+bool _socket_spawn_conn(struct context *ctx, struct socket *sock_src_new, struct socket_watcher **src_new,
+		struct socket *sock_dst_new, struct socket_watcher **dst_new)
+{
+	if ((*src_new = context_add_socket(ctx, sock_src_new)) == NULL)
+		goto err_src_new;
+	if ((*dst_new = context_add_socket(ctx, sock_dst_new)) == NULL)
+		goto err_dst_new;
+	if (!conntrack_add(&ctx->conns, conntrack_entry(sock_src_new->fd, sock_dst_new->fd)))
+		goto err_conntrack;
+
+	socket_watcher_io_start(*src_new, handle_socket);
+	socket_watcher_io_start(*dst_new, handle_socket);
+	return true;
+
+err_conntrack:
+	context_close_socket(ctx, *dst_new);
+
+err_dst_new:
+	context_close_socket(ctx, *src_new);
+
+err_src_new:
+	return false;
+}
+
+private
+int _socket_spawn_link(struct context *ctx, int src_new_fd,
+		struct socket_watcher *src, struct socket_watcher *dst)
+{
+	_fd_ensure_nonblock(src_new_fd);
+
+	int src_domain, src_type, src_protocol;
+	socklen_t optlen = sizeof(int);
+
+	if (getsockopt(src_new_fd, SOL_SOCKET, SO_DOMAIN, &src_domain, &optlen) < 0)
+		return warn_v(-1, "getsockopt(SO_DOMAIN)");
+
+	if (getsockopt(src_new_fd, SOL_SOCKET, SO_TYPE, &src_type, &optlen) < 0)
+		return warn_v(-1, "getsockopt(SO_TYPE)");
+
+	if (getsockopt(src_new_fd, SOL_SOCKET, SO_PROTOCOL, &src_protocol, &optlen) < 0)
+		return warn_v(-1, "getsockopt(SO_PROTOCOL)");
+
+	if (src_domain != AF_UNIX)
+		return warnx_v(-1, "Sockets other than AF_UNIX(%d) not supported, (%d) passed", AF_UNIX, src_domain);
+
+	int dst_new_fd[2];
+	if (socketpair(src_domain, src_type | SOCK_NONBLOCK, src_protocol, dst_new_fd) < 0)
+		return warn_v(-1, "socketpair(%d, %d, %d)", src_domain, src_type, src_protocol);
+
+	/* We will conntrack src_new_fd <-> dst_new_fd[0] and send dst_new_fd[1]
+	 * to dst. */
+	struct socket sock_src_new = {
+		.fd = src_new_fd,
+		.type = SOCKET_TYPE_LINK,
+		.source = {
+			.type = SOCKET_SOURCE_FD,
+			.fd = src->sock.fd,
+		},
+	};
+
+	struct socket sock_dst_new = {
+		.fd = dst_new_fd[0],
+		.type = SOCKET_TYPE_LINK,
+		.source = {
+			.type = SOCKET_SOURCE_FD,
+			.fd = dst->sock.fd,
+		},
+	};
+
+	struct socket_watcher *src_new, *dst_new;
+	if (!_socket_spawn_conn(ctx, &sock_src_new, &src_new, &sock_dst_new, &dst_new))
+		goto err_close_other;
+
+	/* OK, pass the new dst_new_fd[1] out. */
+	return dst_new_fd[1];
+
+err_close_other:
+	close(dst_new_fd[1]);
+	return -1;
+}
 
 private
 ssize_t _socket_recv(struct context *ctx, struct socket_watcher *src, struct socket_watcher *dst)
@@ -238,18 +331,30 @@ ssize_t _socket_recv(struct context *ctx, struct socket_watcher *src, struct soc
 
 		total += recv;
 
+		int dst_new_fd = -1;
 		for (struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msg); cmsg != NULL;
 				cmsg = CMSG_NXTHDR(&msg, cmsg)) {
 			if (cmsg->cmsg_level != SOL_SOCKET || cmsg->cmsg_type != SCM_RIGHTS)
 				continue;
 
-			printf("   HDR FOUND\n");
-			// TODO: _monitor_client_accept_fd(sdbp, socket, cmsg, epfd, ios);
+			int *src_new_fd = (int *) CMSG_DATA(cmsg);
+			log(log, "   lnk1 %2d [via %2d]", *src_new_fd, src->sock.fd);
+			if ((dst_new_fd = _socket_spawn_link(ctx, *src_new_fd, src, dst)) < 0)
+				close(*src_new_fd);
+
+			log(log, "   lnk2 %2d [via %2d]", dst_new_fd, dst->sock.fd);
+
+			/* The message will be reused, so let's just modify
+			 * the descriptor and send it away. */
+			*(int *) CMSG_DATA(cmsg) = dst_new_fd;
 		}
 
 		msg.msg_iov[0].iov_len = recv;
 		if (sendmsg(dst->sock.fd, &msg, MSG_NOSIGNAL) == -1)
 			warn("sendmsg()");
+
+		if (dst_new_fd != -1)
+			close(dst_new_fd);
 
 		_splice_write_dump(dump, 3, (struct iovec[3]){
 			{ .iov_len = sizeof(struct dump_packet_tx), .iov_base = &DUMP_TX(src, dst) },
@@ -277,7 +382,7 @@ ssize_t _socket_recv(struct context *ctx, struct socket_watcher *src, struct soc
 }
 
 private
-void _socket_splice_disconnect(struct ev_loop *loop, struct context *ctx, struct conntrack_entry *link,
+void _socket_splice_disconnect(struct context *ctx, struct conntrack_entry *link,
 		struct socket_watcher *src, struct socket_watcher *dst)
 {
 	const struct io *log = &ctx->options->log;
@@ -293,12 +398,12 @@ void _socket_splice_disconnect(struct ev_loop *loop, struct context *ctx, struct
 			continue;
 
 		log(log, "IO clse %2d", watchers[i]->sock.fd);
-		context_close_socket(ctx, loop, watchers[i]);
+		context_close_socket(ctx, watchers[i]);
 	}
 }
 
 private
-ssize_t _socket_splice(struct ev_loop *loop, struct socket_watcher *src)
+ssize_t _socket_splice(struct socket_watcher *src)
 {
 	if (!_context_make_buffer(src->ctx))
 		err(EXIT_FAILURE, "Cannot allocate socket buffer");
@@ -313,7 +418,7 @@ ssize_t _socket_splice(struct ev_loop *loop, struct socket_watcher *src)
 
 	if (link == NULL) {
 		bug("No connection found for %d", src->sock.fd);
-		context_close_socket(ctx, loop, src);
+		context_close_socket(ctx, src);
 		return -1;
 	}
 
@@ -322,7 +427,7 @@ ssize_t _socket_splice(struct ev_loop *loop, struct socket_watcher *src)
 
 	if ((dst = context_find_socket(ctx, dst_fd)) == NULL) {
 		bug("Socket watcher for %d connected to %d not found", dst_fd, src->sock.fd);
-		context_close_socket(ctx, loop, src);
+		context_close_socket(ctx, src);
 		return -1;
 	}
 
@@ -331,7 +436,7 @@ ssize_t _socket_splice(struct ev_loop *loop, struct socket_watcher *src)
 	ssize_t total = _socket_recv(ctx, src, dst);
 
 	if (total < 0)
-		_socket_splice_disconnect(loop, ctx, link, src, dst);
+		_socket_splice_disconnect(ctx, link, src, dst);
 
 	return total;
 }
@@ -351,11 +456,11 @@ void handle_socket(struct ev_loop *loop, ev_io *watcher, unused int revents)
 	struct socket_watcher *data = watcher->data;
 	struct context *ctx = data->ctx;
 
-	if (_socket_splice(loop, watcher->data) == -1)
+	if (_socket_splice(watcher->data) == -1)
 		_handle_socket_check_exit(loop, ctx);
 }
 
-private
+private inline
 bool _qemu_downlink_accept(struct socket *sock, const struct socket_watcher *sw)
 {
 	struct sockaddr_storage addr;
@@ -364,12 +469,7 @@ bool _qemu_downlink_accept(struct socket *sock, const struct socket_watcher *sw)
 	if ((sock->fd = accept(sw->watcher.fd, (struct sockaddr *) &addr, &addrlen)) == -1)
 		return false;
 
-	int flags = fcntl(sock->fd, F_GETFL);
-	/* This can only fail if we pass ‹fcntl()› an invalid fd or argument. */
-	assert(flags != -1);
-
-	if (fcntl(sock->fd, F_SETFL, flags | O_NONBLOCK) == -1)
-		err(EXIT_FAILURE, "QEMU: fcntl()");
+	_fd_ensure_nonblock(sock->fd);
 
 	sock->type = SOCKET_TYPE_CLIENT;
 	sock->source = (struct socket_source) {
@@ -424,7 +524,7 @@ close_socket:
 }
 
 private
-void handle_qemu_connect(struct ev_loop *loop, ev_io *watcher, int revents)
+void handle_qemu_connect(unused struct ev_loop *loop, ev_io *watcher, int revents)
 {
 	if ((revents & (POLL_ERR | POLL_HUP)) != 0)
 		errx(EXIT_FAILURE, "QEMU: ERR or HUP");
@@ -466,8 +566,8 @@ void handle_qemu_connect(struct ev_loop *loop, ev_io *watcher, int revents)
 		goto fail_swtpm_socket;
 	}
 
-	socket_watcher_io_start(loop, sw_qemu_client, &handle_socket);
-	socket_watcher_io_start(loop, sw_tpm, &handle_socket);
+	socket_watcher_io_start(sw_qemu_client, &handle_socket);
+	socket_watcher_io_start(sw_tpm, &handle_socket);
 	return;
 
 fail_swtpm_socket:
@@ -499,29 +599,31 @@ bool setup_signal(struct ev_loop *loop, struct ev_signal *watcher, int signum, s
 private
 bool run_relay(const struct options *options, const struct socket *sock_qemu_srv)
 {
-	struct context evc = { .options = options };
+	struct ev_loop *loop = ev_loop_new(EVFLAG_AUTO | EVFLAG_SIGNALFD);
+	struct context ctx = {
+		.loop = loop,
+		.options = options,
+	};
 
-	if (!conntrack_init(&evc.conns))
+	if (!conntrack_init(&ctx.conns))
 		err(EXIT_FAILURE, "Cannot set up connection tracking");
 
 	const struct socket_watcher *sd_qemu_srv;
-	if ((sd_qemu_srv = context_add_socket(&evc, sock_qemu_srv)) == NULL)
+	if ((sd_qemu_srv = context_add_socket(&ctx, sock_qemu_srv)) == NULL)
 		err(EXIT_FAILURE, "Cannot add QEMU server socket");
 
-	struct ev_loop *loop = ev_loop_new(EVFLAG_AUTO | EVFLAG_SIGNALFD);
-
-	if (!socket_watcher_io_start(loop, sd_qemu_srv, &handle_qemu_connect))
+	if (!socket_watcher_io_start(sd_qemu_srv, &handle_qemu_connect))
 		err(EXIT_FAILURE, "Cannot add QEMU event watcher to the loop");
 
-	if (!setup_signal(loop, &evc.w_int, SIGINT, &stop_cb))
+	if (!setup_signal(loop, &ctx.w_int, SIGINT, &stop_cb))
 		warn("Failed to setup SIGINT handler");
-	if (!setup_signal(loop, &evc.w_int, SIGTERM, &stop_cb))
+	if (!setup_signal(loop, &ctx.w_int, SIGTERM, &stop_cb))
 		warn("Failed to setup SIGTERM handler");
 
 	ev_run(loop, 0);
 
-	conntrack_destroy(&evc.conns);
-	context_cleanup(&evc);
+	conntrack_destroy(&ctx.conns);
+	context_cleanup(&ctx);
 
 	return true;
 }
