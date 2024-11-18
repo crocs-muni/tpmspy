@@ -690,7 +690,7 @@ private
 void usage(FILE *stream)
 {
 	extern const char *__progname;
-	fprintf(stream, "usage: %s SOCK_SWTPM SOCK_QEMU\n", __progname);
+	fprintf(stream, "usage: %s [-D|--dump-file=FILE] [-L|--log-file=FILE] SOCK_SWTPM SOCK_QEMU\n", __progname);
 }
 
 private
