@@ -11,6 +11,12 @@ compile_commands.json: $(wildcard build/$(HOSTNAME)/compile_commands.json)
 build:
 	mkdir -p $@
 
+install: build/$(HOSTNAME)/sockspy build/$(HOSTNAME)/swtpm
+	install $^ /usr/local/bin
+
+uninstall:
+	$(RM) /usr/local/bin/{sockspy,swtpm}
+
 .PHONY: all
 clean:
 	make -C build/$(HOSTNAME) clean
