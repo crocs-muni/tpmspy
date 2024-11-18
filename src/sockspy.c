@@ -249,7 +249,7 @@ err_src_new:
 
 private
 int _socket_spawn_link(struct context *ctx, int src_new_fd,
-		struct socket_watcher *src, struct socket_watcher *dst)
+		struct socket_watcher *parent[2], struct socket_watcher *link[2])
 {
 	_fd_ensure_nonblock(src_new_fd);
 
@@ -279,7 +279,7 @@ int _socket_spawn_link(struct context *ctx, int src_new_fd,
 		.type = SOCKET_TYPE_LINK,
 		.source = {
 			.type = SOCKET_SOURCE_FD,
-			.fd = src->sock.fd,
+			.fd = parent[0]->sock.fd,
 		},
 	};
 
@@ -288,7 +288,7 @@ int _socket_spawn_link(struct context *ctx, int src_new_fd,
 		.type = SOCKET_TYPE_LINK,
 		.source = {
 			.type = SOCKET_SOURCE_FD,
-			.fd = dst->sock.fd,
+			.fd = parent[1]->sock.fd,
 		},
 	};
 
@@ -297,6 +297,11 @@ int _socket_spawn_link(struct context *ctx, int src_new_fd,
 		goto err_close_other;
 
 	/* OK, pass the new dst_new_fd[1] out. */
+	if (link != NULL) {
+		link[0] = src_new;
+		link[1] = dst_new;
+	}
+
 	return dst_new_fd[1];
 
 err_close_other:
@@ -331,36 +336,80 @@ ssize_t _socket_recv(struct context *ctx, struct socket_watcher *src, struct soc
 
 		total += recv;
 
-		int dst_new_fd = -1;
+		int new_fd[2] = { -1, -1 };
+		struct socket_watcher *new_link[2] = { NULL, NULL };
 		for (struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msg); cmsg != NULL;
 				cmsg = CMSG_NXTHDR(&msg, cmsg)) {
 			if (cmsg->cmsg_level != SOL_SOCKET || cmsg->cmsg_type != SCM_RIGHTS)
 				continue;
 
-			int *src_new_fd = (int *) CMSG_DATA(cmsg);
-			log(log, "   lnk1 %2d [via %2d]", *src_new_fd, src->sock.fd);
-			if ((dst_new_fd = _socket_spawn_link(ctx, *src_new_fd, src, dst)) < 0)
-				close(*src_new_fd);
+			int fds_size = cmsg->cmsg_len / sizeof(int);
+			int *fds = (int *) CMSG_DATA(cmsg);
 
-			log(log, "   lnk2 %2d [via %2d]", dst_new_fd, dst->sock.fd);
+			assert(("SCM_RIGHTS: Passing duplicate headers is not yet supported",
+						new_fd[0] == -1));
+
+			for (int i = 0; i < fds_size; ++i) {
+				assert(("SCM_RIGHTS: The passed fds is not the first",
+							i != 0 || fds[i] > 0));
+				assert(("SCM_RIGHTS: Passing multiple descriptors is not yet supported",
+							i == 0 || fds[i] <= 0));
+			}
+
+			new_fd[0] = fds[0];
+			log(log, "   lnk1 %2d [via %2d]", new_fd[0], src->sock.fd);
+
+			struct socket_watcher *parent_link[] = { src, dst };
+			if ((new_fd[1] = _socket_spawn_link(ctx, new_fd[0], parent_link, new_link)) < 0)
+				close(new_fd[0]);
+
+			log(log, "   lnk2 %2d [via %2d]", new_fd[1], dst->sock.fd);
+
+			// TODO: Make new socket tagging more generic.
+			new_link[0]->sock.type |= SOCKET_LINK_QEMU;
+			new_link[1]->sock.type |= SOCKET_LINK_SWTPM;
 
 			/* The message will be reused, so let's just modify
 			 * the descriptor and send it away. */
-			*(int *) CMSG_DATA(cmsg) = dst_new_fd;
+			*(int *) CMSG_DATA(cmsg) = new_fd[1];
 		}
 
 		msg.msg_iov[0].iov_len = recv;
 		if (sendmsg(dst->sock.fd, &msg, MSG_NOSIGNAL) == -1)
 			warn("sendmsg()");
 
-		if (dst_new_fd != -1)
-			close(dst_new_fd);
+		if (new_fd[1] != -1) {
+			close(new_fd[1]);
+			new_fd[1] = new_link[1]->sock.fd;
+		}
 
-		_splice_write_dump(dump, 3, (struct iovec[3]){
-			{ .iov_len = sizeof(struct dump_packet_tx), .iov_base = &DUMP_TX(src, dst) },
-			{ .iov_len = sizeof(struct dump_packet_data), .iov_base = &DUMP_DATA(recv) },
-			msg.msg_iov[0],
-		});
+		/* We will create a dump packet in memory. */
+		union {
+			struct dump_packet v;
+			char r[sizeof(struct dump_packet)];
+		} dp = { .r = {0} };
+
+		struct iovec iov[3];
+		size_t iovix = 0;
+
+		DUMP_SET_LINK(dp.v.dp_src, src);
+		DUMP_SET_LINK(dp.v.dp_dst, dst);
+
+#define MKIOVEC(SIZE, PTR) \
+	(struct iovec){ .iov_len = (SIZE), .iov_base = (PTR) }
+
+		iov[iovix++] = MKIOVEC(sizeof(dp.v), &dp.v);
+
+		if (new_fd[0] != -1) {
+			dp.v.dp_fds = 2;
+			iov[iovix++] = MKIOVEC(sizeof(new_fd), new_fd);
+		}
+
+		dp.v.dp_data = recv;
+		iov[iovix++] = msg.msg_iov[0];
+
+		_splice_write_dump(dump, iovix, iov);
+#undef MKIOVEC
 	}
 
 	log(log, "   size %8zd", total);

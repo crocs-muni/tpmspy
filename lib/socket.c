@@ -33,9 +33,12 @@ ssize_t socket_type_str3(size_t buffer_size, char buffer[buffer_size],
 	case SOCKET_TYPE_SERVER:
 		end = strlcat(buffer, " server", buffer_size);
 		break;
+	case SOCKET_TYPE_LINK:
+		end = strlcat(buffer, " link", buffer_size);
+		break;
 	default:
-		snprintf(tmp, sizeof(tmp), "unknown (%02x)", socket_type(opt.type));
-		end = strlcat(buffer, "tmp", buffer_size);
+		snprintf(tmp, sizeof(tmp), " unknown (%02x)", socket_type(opt.type));
+		end = strlcat(buffer, tmp, buffer_size);
 	}
 
 	return end;

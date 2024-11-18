@@ -5,44 +5,29 @@
 
 #include "socket.h"
 
-enum dump_packet_kind {
-	DUMP_TRANSFER,
-	DUMP_DATA,
-} dp_kind;
+struct dump_packet_endpoint {
+	enum socket_type type;
+	int fd;
+};
 
 struct dump_packet {
-	enum dump_packet_kind dp_kind;
-	char data[];
+	struct dump_packet_endpoint dp_src, dp_dst;
+
+	size_t dp_fds;
+	size_t dp_data;
+	char bytes[];
 };
 
-struct dump_packet_tx {
-	enum dump_packet_kind dp_kind;
+#define DUMP_PACKET_SIZE(PPKT) \
+	(sizeof(*PPKT) + sizeof(int) * (PPKT)->dp_fds + (PPKT)->dp_data)
 
-	enum socket_type dp_tx_src_type;
-	int dp_tx_src;
-	enum socket_type dp_tx_dst_type;
-	int dp_tx_dst;
-};
+#define DUMP_SET_LINK(ATTR, LNK) \
+	ATTR = (struct dump_packet_endpoint){ .type = (LNK)->sock.type, .fd = (LNK)->sock.fd }
 
-#define DUMP_TX(SRC, DST) \
-	(struct dump_packet_tx){ \
-		.dp_kind = DUMP_TRANSFER, \
-		.dp_tx_src_type = (SRC)->sock.type, \
-		.dp_tx_src = (SRC)->sock.fd, \
-		.dp_tx_dst_type = (DST)->sock.type, \
-		.dp_tx_dst = (DST)->sock.fd, \
-	}
+#define DUMP_PFDS(PACKET) \
+	((int *)(&(PACKET)->bytes[0]))
 
-struct dump_packet_data {
-	enum dump_packet_kind dp_kind;
-
-	size_t dp_data_len;
-};
-
-#define DUMP_DATA(LEN) \
-	(struct dump_packet_data){ \
-		.dp_kind = DUMP_DATA, \
-		.dp_data_len = (LEN), \
-	}
+#define DUMP_PDATA(PACKET) \
+	((int8_t *)(&(PACKET)->bytes[sizeof(int) * (PACKET)->dp_fds]))
 
 #endif // DUMP_H
