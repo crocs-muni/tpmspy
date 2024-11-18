@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include <err.h>
 #include <fcntl.h>
@@ -32,8 +33,9 @@
 
 #include <libgen.h>
 #include <sys/inotify.h>
-#include <sys/syscall.h>
 #include <sys/signalfd.h>
+#include <sys/stat.h>
+#include <sys/syscall.h>
 #include <sys/wait.h>
 
 #include "defs.h"
@@ -53,7 +55,18 @@ static
 bool find_unixio_path(int argc, char *argv[], int *unixio_arg)
 {
 	for (int i = 1; i < argc; i++) {
-		if (streq(argv[i], "--ctrl") && strstr(argv[i + 1], "unixio") != NULL
+		if (strncmp(argv[i], "--ctrl", strlen("--ctrl")) != 0)
+			continue;
+
+		/* The '--OPTION=ARGUMENT' form. */
+		if (strstr(argv[i], "unixio") != NULL
+				&& strstr(argv[i], "path") != NULL) {
+			*unixio_arg = i + 1;
+			return true;
+		}
+
+		/* The '--OPTION ARGUMENT' form. */
+		if (argv[i + 1] != NULL && strstr(argv[i + 1], "unixio") != NULL
 				&& strstr(argv[i + 1], "path") != NULL) {
 			*unixio_arg = i + 1;
 			return true;
@@ -111,7 +124,7 @@ char *extract_socket_path(const char *arg)
 }
 
 static
-bool replace_swtpm_socket(char **arg)
+bool replace_swtpm_socket(const char *data_dir, char **arg)
 {
 	/* ‹strlen(*arg)› definitely has enough space for "path=". We only
 	 * intend to change socket name, so in the worst case, we need to
@@ -133,31 +146,20 @@ bool replace_swtpm_socket(char **arg)
 			strlcat(&buffer[cursor], ",", buffer_size - cursor);
 
 		if (strncmp(token, "path=", strlen("path=")) == 0) {
-			/* Virt-Manager may choose to hold multiple sockets in
-			 * the target directory. Choosing a truly random name
-			 * will unlikely cause conflicts, but why take chances.
-			 * We will insert ‹gate› between the name and ‹.sock›. */
 			char *original = token + strlen("path=");
 			char *slash = strrchr(original, '/');
-			char *suffix = strstr(original, ".sock");
 
 			strlcat(&buffer[cursor], "path=", buffer_size - cursor);
 
-			// Append original path
-			if (slash != NULL) {
-				*slash = '\0';
+			/* Append temporary path and a slash. */
+			strlcat(&buffer[cursor], data_dir, buffer_size - cursor);
+			strlcat(&buffer[cursor], "/", buffer_size - cursor);
+
+			/* Append the file name. */
+			if (slash != NULL)
+				strlcat(&buffer[cursor], &slash[1], buffer_size - cursor);
+			else
 				strlcat(&buffer[cursor], original, buffer_size - cursor);
-				strlcat(&buffer[cursor], "/", buffer_size - cursor);
-			}
-
-			if (suffix != NULL)
-				*suffix = '\0';
-
-			// Append original socket name
-			strlcat(&buffer[cursor], &slash[1], buffer_size - cursor);
-
-			// Append suffixes
-			strlcat(&buffer[cursor], ".gate.sock", buffer_size - cursor);
 		} else {
 			strlcat(&buffer[cursor], token, buffer_size - cursor);
 		}
@@ -202,14 +204,21 @@ leave:
 	return ok;
 }
 
-static noreturn
-void _start_swtpm_exec(char *argv[])
+static inline
+int creat_excl(const char *filename, int flags)
 {
-	char log_file[PATH_MAX] = "/var/tmp/sockspy_swtpm.XXXXXX.log";
-	int log_fd = mkstemps(log_file, strlen(".log"));
+	return open(filename, O_RDWR | O_CREAT | O_EXCL, flags);
+}
+
+static noreturn
+void _start_swtpm_exec(const char *data_dir, char *argv[])
+{
+	char log_file[PATH_MAX];
+	snprintf(log_file, sizeof(log_file), "%s/%s", data_dir, "swtpm.log");
+	int log_fd = creat_excl(log_file, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 
 	if (log_fd == -1)
-		croak("Cannot exec swtpm: mkstemps(%s)", log_file);
+		croak("Cannot exec swtpm: open(%s)", log_file);
 
 	/* Redirect stdin. */
 	if (!_open_to("/dev/null", O_RDONLY, STDIN_FILENO)
@@ -283,7 +292,7 @@ leave:
 }
 
 static
-pid_t start_swtpm(unused int argc, char *argv[], const char *sock)
+pid_t start_swtpm(unused int argc, char *argv[], const char *data_dir, const char *sock)
 {
 	bool status = false;
 
@@ -308,9 +317,9 @@ pid_t start_swtpm(unused int argc, char *argv[], const char *sock)
 		return warn_v(-1, "Cannot start swtpm: fork()");
 
 	if (pid == 0)
-		/* noreturn */ _start_swtpm_exec(argv);
+		/* noreturn */ _start_swtpm_exec(data_dir, argv);
 
-	/* Parent process either waits for the child to die, or socket to  appear. */
+	/* Parent process either waits for the child to die, or socket to appear. */
 	int pidfd = pidfd_open(pid, 0);
 	if (pidfd == -1)
 		warn_jmp(cleanup_kill, "Cannot start swtpm: pidfd_open()");
@@ -334,19 +343,20 @@ cleanup_sock_name:
 }
 
 static noreturn
-void _start_sockspy_exec(const char *swtpm_sock, const char *qemu_sock)
+void _start_sockspy_exec(const char *data_dir, const char *swtpm_sock, const char *qemu_sock)
 {
-	char dump_file[PATH_MAX] = "/var/tmp/sockspy_dump.XXXXXX.bin";
-	int dump_fd = mkstemps(dump_file, strlen(".bin"));
+	char dump_file[PATH_MAX], log_file[PATH_MAX];
+	snprintf(dump_file, sizeof(dump_file), "%s/packets.bin", data_dir);
+	int dump_fd = creat_excl(dump_file, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 
 	if (dump_fd == -1)
-		croak("Cannot exec sockspy: mkstemps(%s)", dump_file);
+		croak("Cannot exec sockspy: open(%s)", dump_file);
 
-	char log_file[PATH_MAX] = "/var/tmp/sockspy.XXXXXX.log";
-	int log_fd = mkstemps(log_file, strlen(".log"));
+	snprintf(log_file, sizeof(log_file), "%s/tpmspy.log", data_dir);
+	int log_fd = creat_excl(log_file, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 
 	if (log_fd == -1)
-		croak("Cannot exec sockspy: mkstemps(%s)", log_file);
+		croak("Cannot exec sockspy: open(%s)", log_file);
 
 	/* Redirect stdin. */
 	if (!_open_to("/dev/null", O_RDONLY, STDIN_FILENO)
@@ -370,7 +380,7 @@ void _start_sockspy_exec(const char *swtpm_sock, const char *qemu_sock)
 }
 
 static
-int start_sockspy(char *swtpm_sock, char *qemu_sock)
+int start_sockspy(const char *data_dir, char *swtpm_sock, char *qemu_sock)
 {
 	pid_t pid = fork();
 
@@ -378,7 +388,7 @@ int start_sockspy(char *swtpm_sock, char *qemu_sock)
 		return warn_v(-1, "Cannot start sockspy: fork()");
 
 	if (pid == 0)
-		/* noreturn */ _start_sockspy_exec(swtpm_sock, qemu_sock);
+		/* noreturn */ _start_sockspy_exec(data_dir, swtpm_sock, qemu_sock);
 
 	return pid;
 }
@@ -493,6 +503,34 @@ restore_sigmask:
 	return status;
 }
 
+private
+bool _create_data_dir(size_t path_size, char path[path_size])
+{
+	time_t epoch = time(NULL);
+
+	struct tm tm;
+	if (localtime_r(&epoch, &tm) == NULL)
+		croak("localtime_r()");
+
+	if (strftime(path, path_size, "/var/tmp/tpmspy-%Y%m%d-%H%M-XXXXXX", &tm) == 0)
+		croak("strftime()");
+
+	if (mkdtemp(path) == NULL)
+		return warn_v(false, "mkdtemp()");
+
+	if (chmod(path, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) != 0)
+		warn("chmod()");
+
+	return true;
+}
+
+#if !defined(GNU_SHENANIGANS) || GNU_SHENANIGANS
+/* It is usually not a great idea to change GNU's internals. However, we are
+ * to execute the program with the same name in different directory, so for
+ * the sake of log clarity, we will change program name. */
+extern char *__progname;
+#endif
+
 int main(int argc, char *argv[])
 {
 	int unixio_arg;
@@ -504,21 +542,26 @@ int main(int argc, char *argv[])
 	if (qemu_sock == NULL)
 		die("Cannot extract socket path from \"%s\"", argv[unixio_arg]);
 
+	/* Create a temporary directory for outputs. */
+	static char data_dir[PATH_MAX];
+	if (!_create_data_dir(sizeof(data_dir), data_dir))
+		die("Cannot create data directory");
+
 	/* 1: Run ‹swtpm› with changed ‹argv[unixio_arg]› pointing to
 	 *    a different socket. */
-	if (!replace_swtpm_socket(&argv[unixio_arg]))
+	if (!replace_swtpm_socket(data_dir, &argv[unixio_arg]))
 		die("Cannot replace arguments for swtpm");
 
 	/* ‹qemu_sock› is the original path, extract the new one. */
 	char *swtpm_sock = extract_socket_path(argv[unixio_arg]);
-	pid_t swtpm_pid = start_swtpm(argc, argv, swtpm_sock);
+	pid_t swtpm_pid = start_swtpm(argc, argv, data_dir, swtpm_sock);
 
 	if (swtpm_pid == -1)
 		warn_jmp(cleanup_paths, "Cannot start swtpm");
 
 	/* 2: Start ‹sockspy› to bridge (modified) ‹swtpm_sock› now handled
 	 *    by ‹swtpm›, and the original ‹qemu_sock› expected by QEMU. */
-	pid_t sockspy_pid = start_sockspy(swtpm_sock, qemu_sock);
+	pid_t sockspy_pid = start_sockspy(data_dir, swtpm_sock, qemu_sock);
 	if (sockspy_pid == -1) {
 		kill(swtpm_pid, SIGTERM);
 		goto cleanup_paths;
