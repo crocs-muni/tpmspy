@@ -533,6 +533,11 @@ extern char *__progname;
 
 int main(int argc, char *argv[])
 {
+#if !defined(GNU_SHENANIGANS) || GNU_SHENANIGANS
+	/* Change program name. */
+	__progname = "swtpm[fake]";
+#endif
+
 	int unixio_arg;
 	if (!find_unixio_path(argc, argv, &unixio_arg))
 		/* noreturn */ passthrough(argc, argv);
