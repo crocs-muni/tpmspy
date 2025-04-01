@@ -4,5 +4,11 @@
 # Build directory
 /build/
 
+# Data directory
+/data/
+
 # Compile commands
 compile_commands.json
+
+# Cache
+/.cache/
