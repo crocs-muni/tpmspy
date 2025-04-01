@@ -1,13 +1,14 @@
 #include "conntrack.h"
 
 #include <assert.h>
+#include <stdlib.h>
 
 #include <defs.h>
 
 #define assert_instance(X) \
 	do { \
-		assert((X) != NULL); \
-		assert(*(X) != NULL); \
+		assert((X) != nullptr); \
+		assert(*(X) != nullptr); \
 	} while (0)
 
 #define assert_entry_in_array(CT, E) \
@@ -24,8 +25,8 @@ size_t _conntrack_size(size_t capacity)
 
 bool conntrack_init(struct conntrack **ctp)
 {
-	assert(ctp != NULL);
-	return (*ctp = calloc(1, _conntrack_size(0))) != NULL;
+	assert(ctp != nullptr);
+	return (*ctp = calloc(1, _conntrack_size(0))) != nullptr;
 }
 
 void conntrack_destroy(struct conntrack **ctp)
@@ -33,7 +34,7 @@ void conntrack_destroy(struct conntrack **ctp)
 	assert_instance(ctp);
 
 	free(*ctp);
-	*ctp = NULL;
+	*ctp = nullptr;
 }
 
 private
@@ -41,7 +42,7 @@ bool _conntrack_resize(struct conntrack **ctp, size_t new_capacity)
 {
 	struct conntrack *new_ct = realloc(*ctp, _conntrack_size(new_capacity));
 
-	if (new_ct == NULL)
+	if (new_ct == nullptr)
 		return false;
 
 	new_ct->capacity = new_capacity;
@@ -93,7 +94,7 @@ void _conntrack_gc(struct conntrack **ctp)
 bool conntrack_remove(struct conntrack **ctp, struct conntrack_entry *entry)
 {
 	assert_instance(ctp);
-	assert(entry != NULL);
+	assert(entry != nullptr);
 
 	assert_entry_in_array(*ctp, entry);
 
@@ -128,9 +129,9 @@ size_t conntrack_disconnect(struct conntrack **ctp, int fd)
 const struct conntrack_entry *conntrack_find(const struct conntrack *ct,
 		const struct conntrack_entry *prev, int fd)
 {
-	assert(ct != NULL);
+	assert(ct != nullptr);
 
-	if (prev == NULL)
+	if (prev == nullptr)
 		prev = &ct->entries[-1];
 	else
 		assert_entry_in_array(ct, prev);
@@ -142,7 +143,7 @@ const struct conntrack_entry *conntrack_find(const struct conntrack *ct,
 			return cursor;
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 struct conntrack_entry *conntrack_find_mut(struct conntrack **ctp, struct conntrack_entry *prev,
@@ -156,7 +157,7 @@ int conntrack_find_fd(const struct conntrack *ct,
 {
 	const struct conntrack_entry *conn = conntrack_find(ct, prev, fd);
 
-	if (conn == NULL)
+	if (conn == nullptr)
 		return -1;
 
 	return conn->a == fd ? conn->b : conn->a;

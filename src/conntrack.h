@@ -1,9 +1,9 @@
-#if !defined(CONNTRACK_H)
+#pragma once
+#ifndef CONNTRACK_H
 #define CONNTRACK_H
 
 #include <stdbool.h>
 #include <stddef.h>
-#include <stdlib.h>
 
 struct conntrack_entry {
 	int a, b;

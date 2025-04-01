@@ -5,10 +5,11 @@
 
 #include <unistd.h>
 
-#include "socket.h"
+#include "defs.h"
 #include "minmax.h"
+#include "socket.h"
 
-static inline
+private inline
 size_t _sockdb_size(size_t capacity)
 {
 	return sizeof(struct sockdb) + sizeof(struct socket) * capacity;
@@ -16,9 +17,9 @@ size_t _sockdb_size(size_t capacity)
 
 bool sockdb_create(struct sockdb **sdbp)
 {
-	assert(sdbp != NULL);
+	assert(sdbp != nullptr);
 
-	return (*sdbp = calloc(1, _sockdb_size(0))) != NULL;
+	return (*sdbp = calloc(1, _sockdb_size(0))) != nullptr;
 }
 
 int sockdb_close(struct sockdb **sdbp, struct socket *socket)
@@ -35,7 +36,7 @@ int sockdb_close(struct sockdb **sdbp, struct socket *socket)
 	return ret;
 }
 
-static inline
+private inline
 void _sockdb_close_ix(struct sockdb **sdbp, size_t i)
 {
 	assert(i < (*sdbp)->init);
@@ -44,8 +45,8 @@ void _sockdb_close_ix(struct sockdb **sdbp, size_t i)
 
 void sockdb_destroy(struct sockdb **sdbp)
 {
-	assert(sdbp != NULL);
-	assert(*sdbp != NULL);
+	assert(sdbp != nullptr);
+	assert(*sdbp != nullptr);
 
 	for (size_t i = 0; i < (*sdbp)->init; i++)
 		sockdb_close(sdbp, &(*sdbp)->db[i]);
@@ -53,15 +54,15 @@ void sockdb_destroy(struct sockdb **sdbp)
 	assert((*sdbp)->size == 0);
 
 	free(*sdbp);
-	*sdbp = NULL;
+	*sdbp = nullptr;
 }
 
-static
+private
 bool _sockdb_resize(struct sockdb **sdbp, size_t new_capacity)
 {
 	struct sockdb *new_db = realloc(*sdbp, _sockdb_size(new_capacity));
 
-	if (new_db == NULL)
+	if (new_db == nullptr)
 		return false;
 
 	new_db->capacity = new_capacity;
@@ -78,12 +79,12 @@ const struct socket *_sockdb_find_empty(const struct sockdb *sockdb)
 			return &sockdb->db[i];
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 const struct socket *sockdb_find(const struct sockdb *sockdb, int fd)
 {
-	assert(sockdb != NULL);
+	assert(sockdb != nullptr);
 	assert(fd >= 0);
 
 	for (size_t i = 0; i < sockdb->init; i++) {
@@ -91,7 +92,7 @@ const struct socket *sockdb_find(const struct sockdb *sockdb, int fd)
 			return &sockdb->db[i];
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 struct socket *sockdb_find_mut(struct sockdb **sdbp, int fd)
@@ -104,10 +105,10 @@ struct socket *sockdb_insert(struct sockdb **sdbp, struct socket v)
 {
 	struct socket *place = (struct socket *) _sockdb_find_empty(*sdbp);
 
-	if (place == NULL) {
+	if (place == nullptr) {
 		if ((*sdbp)->init >= (*sdbp)->capacity
 				&& !_sockdb_resize(sdbp, (*sdbp)->capacity + 16))
-			return NULL;
+			return nullptr;
 
 		assert((*sdbp)->init < (*sdbp)->capacity);
 		place = &(*sdbp)->db[(*sdbp)->init];

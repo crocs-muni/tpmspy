@@ -1,4 +1,5 @@
-#if !defined(SOCKET_H)
+#pragma once
+#ifndef SOCKET_H
 #define SOCKET_H
 
 #include <stdbool.h>

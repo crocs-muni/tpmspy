@@ -1,9 +1,8 @@
 #include "socket.h"
 
 #include <assert.h>
-#include <memory.h>
-
 #include <stdio.h>
+
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <unistd.h>
@@ -68,7 +67,7 @@ ssize_t socket_source_str(size_t buffer_size, char buffer[buffer_size],
 private
 int _get_sock_un(struct sockaddr_un *sun, const char *path)
 {
-	assert(sun != NULL);
+	assert(sun != nullptr);
 
 	memset(sun, 0, sizeof(*sun));
 
@@ -81,7 +80,7 @@ int _get_sock_un(struct sockaddr_un *sun, const char *path)
 
 bool socket_close(struct socket *of)
 {
-	assert(of != NULL);
+	assert(of != nullptr);
 
 	if (of->fd == -1)
 		return true;
@@ -105,8 +104,8 @@ bool socket_close(struct socket *of)
 
 bool socket_server(const char *path, struct socket *of)
 {
-	assert(path != NULL);
-	assert(of != NULL);
+	assert(path != nullptr);
+	assert(of != nullptr);
 
 	struct sockaddr_un address;
 	int sock_fd = _get_sock_un(&address, path);
@@ -154,5 +153,3 @@ bool socket_client(const char *path, struct socket *of)
 
 	return true;
 }
-
-

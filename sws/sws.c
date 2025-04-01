@@ -102,19 +102,19 @@ bool parse_int(int *n, const char *str)
 	return true;
 }
 
-static inline
+private inline
 bool _cmd_parse_direct_msg(struct cli_cmd *cmd, char *tokens[1])
 {
-	return cmd->cmd_msg_via >= 0 && (cmd->cmd_msg_text = tokens[0]) != NULL;
+	return cmd->cmd_msg_via >= 0 && (cmd->cmd_msg_text = tokens[0]) != nullptr;
 }
 
-static inline
+private inline
 bool _cmd_parse_fd_arg(struct cli_cmd *cmd, char *tokens[1])
 {
 	return parse_int(&cmd->cmd_fd, tokens[0]);
 }
 
-static inline
+private inline
 bool _cmd_parse_open(struct cli_cmd *cmd, char *tokens[2])
 {
 	if (streq(tokens[0], "$"))
@@ -140,18 +140,18 @@ struct cli_cmd_desc {
 	{ .type = CLI_CMD_SELECT, "select", &_cmd_parse_fd_arg, 1 },
 	{ .type = CLI_CMD_CLOSE, "close", &_cmd_parse_fd_arg, 1 },
 	{ .type = CLI_CMD_OPEN, "open", &_cmd_parse_open, 1, true },
-	{ 0 },
+	{ },
 };
 
-static
+private
 const struct option LONG_OPTS[] = {
-	{ "help", no_argument, NULL, 'h' },
-	{ "client", no_argument, NULL, 'C' },
-	{ "server", no_argument, NULL, 'S' },
-	{ 0 },
+	{ "help", no_argument, nullptr, 'h' },
+	{ "client", no_argument, nullptr, 'C' },
+	{ "server", no_argument, nullptr, 'S' },
+	{ },
 };
 
-static
+private
 const char SHORT_OPTS[] = "hCS";
 
 void usage(FILE *stream)
@@ -159,7 +159,7 @@ void usage(FILE *stream)
 	fprintf(stream, "usage: sws [--client|-C|--server|-S] SOCKET\n");
 }
 
-static inline
+private inline
 void _options_set_mode(struct options *options, enum op_mode mode)
 {
 	if (options->mode != OP_DEFAULT && options->mode != mode)
@@ -173,7 +173,7 @@ void options_process(struct options *options, int argc, char *argv[])
 	memset(options, 0, sizeof(*options));
 
 	int option;
-	while ((option = getopt_long(argc, argv, SHORT_OPTS, LONG_OPTS, NULL)) != -1) {
+	while ((option = getopt_long(argc, argv, SHORT_OPTS, LONG_OPTS, nullptr)) != -1) {
 		switch (option) {
 		case 'h':
 			usage(stdout);
@@ -207,13 +207,13 @@ struct client {
 	const struct socket *selected;
 };
 
-static inline
+private inline
 bool _setup_client_socket(int sock, struct sockaddr_un *sock_addr)
 {
 	return connect(sock, (struct sockaddr *) sock_addr, sizeof(*sock_addr)) == 0;
 }
 
-static inline
+private inline
 bool _setup_server_socket(int sock, struct sockaddr_un *sock_addr)
 {
 	if (bind(sock, (struct sockaddr *) sock_addr, sizeof(*sock_addr)) != 0)
@@ -228,8 +228,8 @@ bool _setup_server_socket(int sock, struct sockaddr_un *sock_addr)
 struct io *watch_socket(int epfd, struct socket *socket, struct io **ios)
 {
 	struct io *io = malloc(sizeof(*io));
-	if (io == NULL)
-		return NULL;
+	if (io == nullptr)
+		return nullptr;
 
 	io->type = IO_SOCKET;
 	io->socket = socket;
@@ -241,13 +241,13 @@ struct io *watch_socket(int epfd, struct socket *socket, struct io **ios)
 
 	if (epoll_ctl(epfd, EPOLL_CTL_ADD, socket->fd, &ev) != 0) {
 		free(io);
-		return NULL;
+		return nullptr;
 	}
 
 	return io_chain_append(ios, io);
 }
 
-static
+private
 bool _fd_add_flags(int fd, int new_flags)
 {
 	int old_flags;
@@ -263,11 +263,11 @@ bool _fd_add_flags(int fd, int new_flags)
 struct io *watch_std(int epfd, int fd, struct io **ios)
 {
 	if (!_fd_add_flags(fd, O_NONBLOCK))
-		return NULL;
+		return nullptr;
 
 	struct io *io = malloc(sizeof(*io));
-	if (io == NULL)
-		return NULL;
+	if (io == nullptr)
+		return nullptr;
 
 	io->type = IO_STD;
 	io->std = fd;
@@ -279,13 +279,13 @@ struct io *watch_std(int epfd, int fd, struct io **ios)
 
 	if (epoll_ctl(epfd, EPOLL_CTL_ADD, fd, &ev) != 0) {
 		free(io);
-		return NULL;
+		return nullptr;
 	}
 
 	return io_chain_append(ios, io);
 }
 
-static
+private
 sigset_t _get_watched_signals(void)
 {
 	sigset_t s;
@@ -303,17 +303,17 @@ sigset_t _get_watched_signals(void)
 struct io *watch_signals(int epfd, struct io **ios)
 {
 	sigset_t signals = _get_watched_signals();
-	if (sigprocmask(SIG_BLOCK, &signals, NULL) != 0)
-		return NULL;
+	if (sigprocmask(SIG_BLOCK, &signals, nullptr) != 0)
+		return nullptr;
 
 	int sigfd = signalfd(-1, &signals, SFD_NONBLOCK);
 	if (sigfd == -1)
-		return NULL;
+		return nullptr;
 
 	struct io *io = malloc(sizeof(*io));
-	if (io == NULL) {
+	if (io == nullptr) {
 		close(sigfd);
-		return NULL;
+		return nullptr;
 	}
 
 	io->type = IO_SIGFD;
@@ -327,7 +327,7 @@ struct io *watch_signals(int epfd, struct io **ios)
 	if (epoll_ctl(epfd, EPOLL_CTL_ADD, sigfd, &ev) != 0) {
 		close(sigfd);
 		free(io);
-		return NULL;
+		return nullptr;
 	}
 
 	return io_chain_append(ios, io);
@@ -339,7 +339,7 @@ struct socket *sockets_init(struct options *options, struct sockdb **sdbp,
 	int sock = socket(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK, 0);
 
 	if (sock == -1)
-		return NULL;
+		return nullptr;
 
 	struct sockaddr_un sock_addr = {
 		.sun_family = AF_UNIX,
@@ -348,7 +348,7 @@ struct socket *sockets_init(struct options *options, struct sockdb **sdbp,
 	if (strlcpy(sock_addr.sun_path, options->path, sizeof(sock_addr.sun_path))
 			>= sizeof(sock_addr.sun_path)) {
 		errno = ENAMETOOLONG;
-		return NULL;
+		return nullptr;
 	}
 
 	struct socket socket = {
@@ -361,22 +361,22 @@ struct socket *sockets_init(struct options *options, struct sockdb **sdbp,
 
 	if (options->mode == OP_CLIENT) {
 		if (!_setup_client_socket(sock, &sock_addr))
-			return NULL;
+			return nullptr;
 		socket.type = SOCKET_TYPE_CLIENT;
 	} else {
 		if (!_setup_server_socket(sock, &sock_addr))
-			return NULL;
+			return nullptr;
 		socket.type = SOCKET_TYPE_SERVER;
 	}
 
 	struct socket *place = sockdb_insert(sdbp, socket);
 
-	if (place == NULL)
-		return NULL;
+	if (place == nullptr)
+		return nullptr;
 
-	if (watch_socket(epfd, place, ios) == NULL) {
+	if (watch_socket(epfd, place, ios) == nullptr) {
 		sockdb_close(sdbp, place);
-		return NULL;
+		return nullptr;
 	}
 
 	return place;
@@ -389,8 +389,8 @@ enum _monitor_ev {
 	MEV_ERROR,
 };
 
-static
-enum _monitor_ev _monitor_sigfd(unused struct epoll_event *ev, int sigfd)
+private
+enum _monitor_ev _monitor_sigfd(struct epoll_event * /*ev*/, int sigfd)
 {
 	struct signalfd_siginfo siginfo;
 	while (read(sigfd, &siginfo, sizeof(siginfo)) > 0) {
@@ -406,12 +406,12 @@ enum _monitor_ev _monitor_sigfd(unused struct epoll_event *ev, int sigfd)
 	return MEV_CONTINUE;
 }
 
-static
+private
 enum _monitor_ev _monitor_server(int epfd, struct sockdb **sockdb,
-		struct io **ios, struct socket *socket, unused struct epoll_event *ev)
+		struct io **ios, struct socket *socket, struct epoll_event * /*ev*/)
 {
 	int fd;
-	while ((fd = accept4(socket->fd, NULL, NULL, SOCK_NONBLOCK)) != -1) {
+	while ((fd = accept4(socket->fd, nullptr, nullptr, SOCK_NONBLOCK)) != -1) {
 		struct socket tmp = {
 			.fd = fd,
 			.type = SOCKET_TYPE_CLIENT,
@@ -419,13 +419,13 @@ enum _monitor_ev _monitor_server(int epfd, struct sockdb **sockdb,
 		};
 
 		struct socket *client = sockdb_insert(sockdb, tmp);
-		if (client == NULL) {
+		if (client == nullptr) {
 			warn("[%2d] accept(%d): Cannot add socket to database", socket->fd, fd);
 			close(fd);
 			return MEV_CONTINUE;
 		}
 
-		if (watch_socket(epfd, client, ios) == NULL) {
+		if (watch_socket(epfd, client, ios) == nullptr) {
 			warn("[%2d] accept(%d): Cannot setup socket watch", socket->fd, fd);
 			sockdb_close(sockdb, client);
 			return MEV_CONTINUE;
@@ -437,21 +437,21 @@ enum _monitor_ev _monitor_server(int epfd, struct sockdb **sockdb,
 	return MEV_CONTINUE;
 }
 
-static
-void _monitor_client_eof(int epfd, struct sockdb **sockdb, unused struct io **ios,
+private
+void _monitor_client_eof(int epfd, struct sockdb **sockdb, struct io ** /*ios*/,
 		struct socket *socket)
 {
 	/* According to ‹man 7 epoll›, ‹close()›d descriptor should
 	 * automatically be removed from the interest list. However, there
 	 * are claims that this behaviour is buggy. */
-	if (epoll_ctl(epfd, EPOLL_CTL_DEL, socket->fd, NULL) != 0)
+	if (epoll_ctl(epfd, EPOLL_CTL_DEL, socket->fd, nullptr) != 0)
 		warn("epoll_ctl(): Cannot remove %d\n", socket->fd);
 
 	info("[%2d] Channel closed", socket->fd);
 	sockdb_close(sockdb, socket);
 }
 
-static
+private
 enum _monitor_ev _monitor_client_accept_fd(struct sockdb **sdbp, struct socket *socket,
 		struct cmsghdr *cmsg, int epfd, struct io **ios)
 {
@@ -462,13 +462,13 @@ enum _monitor_ev _monitor_client_accept_fd(struct sockdb **sdbp, struct socket *
 		.source = { .type = SOCKET_SOURCE_FD, .fd = socket->fd },
 	});
 
-	if (new_channel == NULL) {
+	if (new_channel == nullptr) {
 		warnx("[%2d] Dropped new channel %d", socket->fd, *fd);
 		close(*fd);
 		return MEV_ERROR;
 	}
 
-	if (watch_socket(epfd, new_channel, ios) == NULL) {
+	if (watch_socket(epfd, new_channel, ios) == nullptr) {
 		warn("%d: Cannot setup new channel (%d) watch", socket->fd, *fd);
 		sockdb_close(sdbp, new_channel);
 		return MEV_ERROR;
@@ -478,9 +478,9 @@ enum _monitor_ev _monitor_client_accept_fd(struct sockdb **sdbp, struct socket *
 	return MEV_CONTINUE;
 }
 
-static
-enum _monitor_ev _monitor_client_recv(unused int epfd, unused struct sockdb **sdbp,
-		unused struct io **ios, struct socket *socket)
+private
+enum _monitor_ev _monitor_client_recv(int epfd, struct sockdb ** sdbp,
+		struct io **ios, struct socket *socket)
 {
 	char message[4096], control[256];
 	struct iovec iov[] = {
@@ -501,7 +501,7 @@ enum _monitor_ev _monitor_client_recv(unused int epfd, unused struct sockdb **sd
 		if (message[recv - 1] != '\n')
 			putchar('\n');
 
-		for (struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msg); cmsg != NULL;
+		for (struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msg); cmsg != nullptr;
 				cmsg = CMSG_NXTHDR(&msg, cmsg)) {
 			if (cmsg->cmsg_level != SOL_SOCKET || cmsg->cmsg_type != SCM_RIGHTS)
 				continue;
@@ -520,7 +520,7 @@ enum _monitor_ev _monitor_client_recv(unused int epfd, unused struct sockdb **sd
 	return MEV_ERROR;
 }
 
-static
+private
 enum _monitor_ev _monitor_client(int epfd, struct sockdb **sockdb,
 		struct io **ios, struct socket *socket, struct epoll_event *ev)
 {
@@ -536,11 +536,10 @@ enum _monitor_ev _monitor_client(int epfd, struct sockdb **sockdb,
 	return sub;
 }
 
-static
-enum _monitor_ev _std_send(const struct socket *socket, const char *line, size_t line_len,
-		int fd)
+private
+enum _monitor_ev _std_send(const struct socket *socket, const char *line, size_t line_len, int fd)
 {
-	if (socket == NULL || socket->fd < 0) {
+	if (socket == nullptr || socket->fd < 0) {
 		fprintf(stderr, "No or invalid channel selected\n");
 		return MEV_ERROR;
 	}
@@ -582,24 +581,24 @@ enum _monitor_ev _std_send(const struct socket *socket, const char *line, size_t
 	return MEV_CONTINUE;
 }
 
-static
+private
 bool _std_parse_cmd_as(struct cli_cmd *cmd, char *command, char *tokens[],
 		struct cli_cmd_desc *cursor)
 {
 	for (size_t i = 0; i < cursor->required_tokens + 1; i++)
-		tokens[i] = strtok(NULL, i == cursor->required_tokens ? "\n" : " \n");
+		tokens[i] = strtok(nullptr, i == cursor->required_tokens ? "\n" : " \n");
 
-	if (cursor->required_tokens > 0 && tokens[cursor->required_tokens - 1] == NULL) {
+	if (cursor->required_tokens > 0 && tokens[cursor->required_tokens - 1] == nullptr) {
 		info("%s: Not enough tokens; %zu required", command, cursor->required_tokens);
 		return false;
 	}
 
-	if (!cursor->slurp_rest && tokens[cursor->required_tokens] != NULL) {
+	if (!cursor->slurp_rest && tokens[cursor->required_tokens] != nullptr) {
 		info("%s: Too many tokens; %zu required", command, cursor->required_tokens);
 		return false;
 	}
 
-	if (cursor->parse != NULL && !cursor->parse(cmd, tokens)) {
+	if (cursor->parse != nullptr && !cursor->parse(cmd, tokens)) {
 		info("%s: Cannot parse tokens", command);
 		return false;
 	}
@@ -607,20 +606,20 @@ bool _std_parse_cmd_as(struct cli_cmd *cmd, char *command, char *tokens[],
 	return true;
 }
 
-static
-struct cli_cmd _std_parse_cmd(char *line, unused ssize_t line_len)
+private
+struct cli_cmd _std_parse_cmd(char *line, ssize_t /*line_len*/)
 {
-	assert(line != NULL);
+	assert(line != nullptr);
 	assert(line[0] == '/');
 
 	static const struct cli_cmd NOP = { .cmd_type = CLI_CMD_NOP };
-	struct cli_cmd cmd = { 0 };
+	struct cli_cmd cmd = { };
 
 	char *command = strtok(line, " \n");
-	if (command == NULL)
+	if (command == nullptr)
 		return NOP;
 
-	for (struct cli_cmd_desc *cursor = CLI_COMMANDS; cursor->command != NULL; cursor++) {
+	for (struct cli_cmd_desc *cursor = CLI_COMMANDS; cursor->command != nullptr; cursor++) {
 		if (cursor->type == CLI_CMD_NOP)
 			continue;
 
@@ -631,7 +630,7 @@ struct cli_cmd _std_parse_cmd(char *line, unused ssize_t line_len)
 
 		cmd.cmd_type = cursor->type;
 		char **tokens = malloc((cursor->required_tokens + 1) * sizeof(char *));
-		if (tokens == NULL)
+		if (tokens == nullptr)
 			return NOP;
 
 		if (!_std_parse_cmd_as(&cmd, command, tokens, cursor)) {
@@ -647,11 +646,11 @@ struct cli_cmd _std_parse_cmd(char *line, unused ssize_t line_len)
 	return NOP;
 }
 
-static
+private
 bool _std_cmd_direct_msg(struct cli_cmd *cmd, const struct sockdb *sockdb)
 {
 	const struct socket *target = sockdb_find(sockdb, cmd->cmd_msg_via);
-	if (target == NULL) {
+	if (target == nullptr) {
 		warnx("%d: No such channel", cmd->cmd_msg_via);
 		return false;
 	}
@@ -659,7 +658,7 @@ bool _std_cmd_direct_msg(struct cli_cmd *cmd, const struct sockdb *sockdb)
 	return _std_send(target, cmd->cmd_msg_text, strlen(cmd->cmd_msg_text), -1) == MEV_CONTINUE;
 }
 
-static
+private
 const char *_std_cmd_list_type(enum socket_type type)
 {
 	static char buffer[256];
@@ -671,7 +670,7 @@ const char *_std_cmd_list_type(enum socket_type type)
 	return buffer;
 }
 
-static
+private
 const char *_std_cmd_list_source(const struct socket_source *source)
 {
 	static char buffer[PATH_MAX];
@@ -689,7 +688,7 @@ const char *_std_cmd_list_source(const struct socket_source *source)
 	return buffer;
 }
 
-static
+private
 void _std_cmd_list(const struct sockdb *sockdb)
 {
 	for (size_t i = 0; i < sockdb->init; i++) {
@@ -702,13 +701,13 @@ void _std_cmd_list(const struct sockdb *sockdb)
 	}
 }
 
-static
+private
 bool _std_cmd_select(struct cli_cmd *cmd, const struct sockdb *sockdb,
 		struct client *client)
 {
 	const struct socket *socket = sockdb_find(sockdb, cmd->cmd_fd);
 
-	if (socket == NULL)
+	if (socket == nullptr)
 		return warnx_v(false, "%d: No such channel", cmd->cmd_fd);
 
 	if (socket->type == SOCKET_TYPE_SERVER)
@@ -718,7 +717,7 @@ bool _std_cmd_select(struct cli_cmd *cmd, const struct sockdb *sockdb,
 	return true;
 }
 
-static
+private
 bool _std_cmd_open(struct cli_cmd *cmd, struct sockdb **sdbp, struct client *client,
 		int epfd, struct io **ios)
 {
@@ -726,7 +725,7 @@ bool _std_cmd_open(struct cli_cmd *cmd, struct sockdb **sdbp, struct client *cli
 		? client->selected
 		: sockdb_find_mut(sdbp, cmd->cmd_msg_via);
 
-	if (tunnel == NULL) {
+	if (tunnel == nullptr) {
 		if (cmd->cmd_msg_via < 0)
 			return warnx_v(false, "No channel selected");
 		return warnx_v(false, "%d: No such channel opened", cmd->cmd_msg_via);
@@ -741,7 +740,7 @@ bool _std_cmd_open(struct cli_cmd *cmd, struct sockdb **sdbp, struct client *cli
 	const char *msg = "\0";
 	size_t msg_len = 1;
 
-	if (cmd->cmd_msg_text != NULL) {
+	if (cmd->cmd_msg_text != nullptr) {
 		msg = cmd->cmd_msg_text;
 		msg_len = strlen(cmd->cmd_msg_text);
 	}
@@ -757,12 +756,12 @@ bool _std_cmd_open(struct cli_cmd *cmd, struct sockdb **sdbp, struct client *cli
 		.source = { .type = SOCKET_SOURCE_FD, .fd = tunnel->fd },
 	});
 
-	if (new_client == NULL) {
+	if (new_client == nullptr) {
 		close(sv[0]);
 		goto close_sv_1;
 	}
 
-	if (watch_socket(epfd, new_client, ios) == NULL) {
+	if (watch_socket(epfd, new_client, ios) == nullptr) {
 		warn("%d: Cannot setup new socket watch", sv[0]);
 		sockdb_close(sdbp, new_client);
 		goto close_sv_1;
@@ -776,12 +775,12 @@ close_sv_1:
 	return true;
 }
 
-static
+private
 bool _std_cmd_close(struct cli_cmd *cmd, struct sockdb **sdbp)
 {
 	struct socket *socket = sockdb_find_mut(sdbp, cmd->cmd_fd);
 
-	if (socket == NULL)
+	if (socket == nullptr)
 		return warnx_v(false, "%d: No such channel", cmd->cmd_fd);
 
 	if (sockdb_close(sdbp, socket) != 0)
@@ -790,7 +789,7 @@ bool _std_cmd_close(struct cli_cmd *cmd, struct sockdb **sdbp)
 	return true;
 }
 
-static
+private
 enum _monitor_ev _std_exec_cmd(struct cli_cmd *cmd, struct sockdb **sdbp, struct client *client,
 		int epfd, struct io **ios)
 {
@@ -821,7 +820,7 @@ enum _monitor_ev _std_exec_cmd(struct cli_cmd *cmd, struct sockdb **sdbp, struct
 	return MEV_CONTINUE;
 }
 
-static inline
+private inline
 bool _std_line_is_empty(const char *str, ssize_t str_len_hint)
 {
 	if (str_len_hint < 0)
@@ -830,14 +829,14 @@ bool _std_line_is_empty(const char *str, ssize_t str_len_hint)
 	return (size_t) str_len_hint == strspn(str, " \t\n");
 }
 
-static
-enum _monitor_ev _monitor_std(unused int epfd, struct sockdb **sdbp, unused struct io **ios,
+private
+enum _monitor_ev _monitor_std(int epfd, struct sockdb **sdbp, struct io **ios,
 		int fd, struct epoll_event *ev, struct client *client)
 {
 	enum _monitor_ev response = MEV_CONTINUE;
 
 	if (ev->events & EPOLLIN) {
-		char *line = NULL;
+		char *line = nullptr;
 		size_t line_len = 0;
 
 		errno = 0;
@@ -849,7 +848,7 @@ enum _monitor_ev _monitor_std(unused int epfd, struct sockdb **sdbp, unused stru
 					continue;
 
 				if (_std_send(client->selected, line, rd, -1) == MEV_EOF)
-					client->selected = NULL;
+					client->selected = nullptr;
 			} else {
 				struct cli_cmd cmd = _std_parse_cmd(line, rd);
 				response = _std_exec_cmd(&cmd, sdbp, client, epfd, ios);
@@ -874,7 +873,7 @@ enum _monitor_ev _monitor_std(unused int epfd, struct sockdb **sdbp, unused stru
 	return response;
 }
 
-static
+private
 enum _monitor_ev _monitor_ev_handle(int epfd, struct sockdb **sockdb,
 		struct io **ios, struct client *client, struct epoll_event *ev)
 {
@@ -922,9 +921,9 @@ bool monitor(int epfd, struct sockdb **sockdb, struct io **ios, struct client *c
 			}
 		}
 
-		if (client->selected != NULL && client->selected->fd < 0) {
+		if (client->selected != nullptr && client->selected->fd < 0) {
 			info("Deselecting closed channel, select a new one with /select N");
-			client->selected = NULL;
+			client->selected = nullptr;
 		}
 	}
 
@@ -947,19 +946,19 @@ int main(int argc, char *argv[])
 	if (epfd == -1)
 		croak("epoll_create()");
 
-	struct client client = { 0 };
+	struct client client = { };
 	struct socket *main_socket;
-	if ((main_socket = sockets_init(&options, &sockdb, epfd, &ios)) == NULL)
+	if ((main_socket = sockets_init(&options, &sockdb, epfd, &ios)) == nullptr)
 		croak("%s", options.path);
 
 	if (options.mode == OP_CLIENT)
 		client.selected = main_socket;
 
-	if (watch_std(epfd, STDIN_FILENO, &ios) == NULL)
+	if (watch_std(epfd, STDIN_FILENO, &ios) == nullptr)
 		croak("Cannot setup input watch");
 
 	struct io *io_sigfd;
-	if ((io_sigfd = watch_signals(epfd, &ios)) == NULL)
+	if ((io_sigfd = watch_signals(epfd, &ios)) == nullptr)
 		croak("Cannot setup signal watch");
 
 	bool status = monitor(epfd, &sockdb, &ios, &client);

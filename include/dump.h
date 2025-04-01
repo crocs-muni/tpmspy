@@ -1,33 +1,61 @@
-#if !defined(DUMP_H)
+#pragma once
+#ifndef DUMP_H
 #define DUMP_H
 
 #include <stddef.h>
+#include <stdint.h>
 
-#include "socket.h"
+#include "defs.h"
 
-struct dump_packet_endpoint {
-	enum socket_type type;
-	int fd;
+#define DUMP_MAGIC { 'T', 'P', 'M', 'S', 'P', 'Y' }
+#define DUMP_VERSION_MAJOR 1
+#define DUMP_VERSION_MINOR 0
+
+#define DUMP_HEADER \
+	(struct dump_header){ \
+		.magic = DUMP_MAGIC, \
+		.version = { DUMP_VERSION_MAJOR, DUMP_VERSION_MINOR } \
+	}
+
+struct packed dump_header {
+	uint8_t magic[6];
+	uint8_t version[2];
 };
 
-struct dump_packet {
-	struct dump_packet_endpoint dp_src, dp_dst;
+struct dump_packet_endpoint {
+	int32_t type; /* enum socket_type */
+	int32_t fd;   /* int (fd) */
+};
 
-	size_t dp_fds;
-	size_t dp_data;
+typedef int32_t dump_fd_t;
+
+struct packed dump_time {
+	int64_t s;
+	int32_t us;
+};
+
+struct packed dump_packet {
+	struct dump_packet_endpoint dp_src, dp_dst;
+	struct dump_time dp_time;
+
+	uint32_t dp_fds;
+	uint32_t dp_data;
 	char bytes[];
 };
 
-#define DUMP_PACKET_SIZE(PPKT) \
-	(sizeof(*PPKT) + sizeof(int) * (PPKT)->dp_fds + (PPKT)->dp_data)
+void dump_packet_marshall(struct dump_packet *dst, const struct dump_packet *src);
+void dump_packet_marshall_inplace(struct dump_packet *p);
 
-#define DUMP_SET_LINK(ATTR, LNK) \
-	ATTR = (struct dump_packet_endpoint){ .type = (LNK)->sock.type, .fd = (LNK)->sock.fd }
+#define DUMP_PACKET_SIZE(PPKT) \
+	(sizeof(*PPKT) + sizeof((PPKT)->dp_fds) * (PPKT)->dp_fds + (PPKT)->dp_data)
 
 #define DUMP_PFDS(PACKET) \
-	((int *)(&(PACKET)->bytes[0]))
+	((dump_fd_t *)(&(PACKET)->bytes[0]))
 
-#define DUMP_PDATA(PACKET) \
-	((int8_t *)(&(PACKET)->bytes[sizeof(int) * (PACKET)->dp_fds]))
+#define DUMP_PDATA_RAW(PACKET) \
+	((uint8_t *)(&(PACKET)->bytes[sizeof(dump_fd_t) * (PACKET)->dp_fds]))
+
+#define DUMP_PDATA(PACKET, TYPE) \
+	((TYPE *)(&(PACKET)->bytes[sizeof(dump_fd_t) * (PACKET)->dp_fds]))
 
 #endif // DUMP_H

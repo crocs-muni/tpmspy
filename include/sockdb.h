@@ -1,4 +1,5 @@
-#if !defined(SOCKDB_H)
+#pragma once
+#ifndef SOCKDB_H
 #define SOCKDB_H
 
 #include <stddef.h>

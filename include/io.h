@@ -1,4 +1,5 @@
-#if !defined(IO_H)
+#pragma once
+#ifndef IO_H
 #define IO_H
 
 struct io {
@@ -23,6 +24,5 @@ struct io {
 void io_chain_create(struct io **head);
 void io_chain_destroy(struct io **head);
 struct io *io_chain_append(struct io **head, struct io *node);
-
 
 #endif // IO_H

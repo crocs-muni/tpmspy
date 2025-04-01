@@ -1,4 +1,5 @@
-#if !defined(STRSCPY_H)
+#pragma once
+#ifndef STRSCPY_H
 #define STRSCPY_H
 
 #include <stddef.h>

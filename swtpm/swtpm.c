@@ -42,16 +42,16 @@
 #include "msg.h"
 #include "utils.h"
 
-static
+private
 const char SWTPM_BIN[] = "/usr/bin/swtpm";
 
-static
+private
 const char SOCKSPY_BIN[] = "/usr/local/bin/sockspy";
 
-static
+private
 const int POLL_TIMEOUT = 2000;
 
-static
+private
 bool find_unixio_path(int argc, char *argv[], int *unixio_arg)
 {
 	for (int i = 1; i < argc; i++) {
@@ -59,15 +59,15 @@ bool find_unixio_path(int argc, char *argv[], int *unixio_arg)
 			continue;
 
 		/* The '--OPTION=ARGUMENT' form. */
-		if (strstr(argv[i], "unixio") != NULL
-				&& strstr(argv[i], "path") != NULL) {
+		if (strstr(argv[i], "unixio") != nullptr
+				&& strstr(argv[i], "path") != nullptr) {
 			*unixio_arg = i + 1;
 			return true;
 		}
 
 		/* The '--OPTION ARGUMENT' form. */
-		if (argv[i + 1] != NULL && strstr(argv[i + 1], "unixio") != NULL
-				&& strstr(argv[i + 1], "path") != NULL) {
+		if (argv[i + 1] != nullptr && strstr(argv[i + 1], "unixio") != nullptr
+				&& strstr(argv[i + 1], "path") != nullptr) {
 			*unixio_arg = i + 1;
 			return true;
 		}
@@ -76,7 +76,7 @@ bool find_unixio_path(int argc, char *argv[], int *unixio_arg)
 	return false;
 }
 
-static
+private
 void _passthrough_check_exe_loop(void)
 {
 	char exe[PATH_MAX];
@@ -92,8 +92,8 @@ void _passthrough_check_exe_loop(void)
 		croak("passthrough(): Loop detected for execv()");
 }
 
-static noreturn
-void passthrough(unused int argc, char *argv[])
+private no_return
+void passthrough(int /*argc*/, char *argv[])
 {
 	/* Prevent unwanted loops if, by accident, we aready are run as the
 	 * target binary. */
@@ -103,27 +103,27 @@ void passthrough(unused int argc, char *argv[])
 	croak("exec(%s)", SWTPM_BIN);
 }
 
-static
+private
 char *extract_socket_path(const char *arg)
 {
 	char *path = strstr(arg, "path=");
-	if (path == NULL)
-		return warnx_v(NULL, "Cannot extract socket path: Socket path not found");
+	if (path == nullptr)
+		return warnx_v(nullptr, "Cannot extract socket path: Socket path not found");
 
 	path += strlen("path=");
 
 	char *copy = strdup(path);
-	if (copy == NULL)
-		return warn_v(NULL, "Cannot extract socket path: strdup()");
+	if (copy == nullptr)
+		return warn_v(nullptr, "Cannot extract socket path: strdup()");
 
 	char *comma = strchr(copy, ',');
-	if (comma != NULL)
+	if (comma != nullptr)
 		*comma = '\0';
 
 	return copy;
 }
 
-static
+private
 bool replace_swtpm_socket(const char *data_dir, char **arg)
 {
 	/* ‹strlen(*arg)› definitely has enough space for "path=". We only
@@ -132,7 +132,7 @@ bool replace_swtpm_socket(const char *data_dir, char **arg)
 	size_t buffer_size = strlen(*arg) + NAME_MAX;
 	char *buffer = malloc(buffer_size);
 
-	if (buffer == NULL)
+	if (buffer == nullptr)
 		return warn_v(false, "Cannot intercept socket: malloc()");
 
 	size_t cursor = 0;
@@ -141,7 +141,7 @@ bool replace_swtpm_socket(const char *data_dir, char **arg)
 	/* Start with an empty string so we can use ‹strlcat()› everywhere. */
 	buffer[0] = '\0';
 
-	while ((token = strtok(cursor == 0 ? token : NULL, ",")) != NULL) {
+	while ((token = strtok(cursor == 0 ? token : nullptr, ",")) != nullptr) {
 		if (cursor != 0)
 			strlcat(&buffer[cursor], ",", buffer_size - cursor);
 
@@ -156,7 +156,7 @@ bool replace_swtpm_socket(const char *data_dir, char **arg)
 			strlcat(&buffer[cursor], "/", buffer_size - cursor);
 
 			/* Append the file name. */
-			if (slash != NULL)
+			if (slash != nullptr)
 				strlcat(&buffer[cursor], &slash[1], buffer_size - cursor);
 			else
 				strlcat(&buffer[cursor], original, buffer_size - cursor);
@@ -172,19 +172,19 @@ bool replace_swtpm_socket(const char *data_dir, char **arg)
 	return true;
 }
 
-static
+private
 int pidfd_open(pid_t pid, int flags)
 {
 	return syscall(SYS_pidfd_open, pid, flags);
 }
 
-static
+private
 int pidfd_send_signal(int pidfd, int sig, siginfo_t *info, unsigned int flags)
 {
 	return syscall(SYS_pidfd_send_signal, pidfd, sig, info, flags);
 }
 
-static
+private
 bool _open_to(const char *path, int flags, int target_fd)
 {
 	bool ok = false;
@@ -204,13 +204,13 @@ leave:
 	return ok;
 }
 
-static inline
+private inline
 int creat_excl(const char *filename, int flags)
 {
 	return open(filename, O_RDWR | O_CREAT | O_EXCL, flags);
 }
 
-static noreturn
+private no_return
 void _start_swtpm_exec(const char *data_dir, char *argv[])
 {
 	char log_file[PATH_MAX];
@@ -238,7 +238,7 @@ enum _start_swtpm_state {
 	_start_swtpm_ok,
 };
 
-static
+private
 enum _start_swtpm_state _start_swtpm_file_created(int inofd, const char *path)
 {
 	char evbuf[sizeof(struct inotify_event) + NAME_MAX + 1];
@@ -258,7 +258,7 @@ enum _start_swtpm_state _start_swtpm_file_created(int inofd, const char *path)
 	return _start_swtpm_continue;
 }
 
-static
+private
 bool _start_swtpm_await_socket(int inofd, int pidfd, const char *socket_path)
 {
 	struct pollfd fds[] = {
@@ -291,13 +291,13 @@ leave:
 	return loop_state == _start_swtpm_ok;
 }
 
-static
-pid_t start_swtpm(unused int argc, char *argv[], const char *data_dir, const char *sock)
+private
+pid_t start_swtpm(int /*argc*/, char *argv[], const char *data_dir, const char *sock)
 {
 	bool status = false;
 
 	char *sock_copy = strdup(sock);
-	if (sock_copy == NULL)
+	if (sock_copy == nullptr)
 		return warn_v(-1, "Cannot start swtpm: strdup()");
 
 	const char *sock_name = basename(sock_copy);
@@ -342,7 +342,7 @@ cleanup_sock_name:
 	return status ? pid : -1;
 }
 
-static noreturn
+private no_return
 void _start_sockspy_exec(const char *data_dir, const char *swtpm_sock, const char *qemu_sock)
 {
 	char dump_file[PATH_MAX], log_file[PATH_MAX];
@@ -369,7 +369,7 @@ void _start_sockspy_exec(const char *data_dir, const char *swtpm_sock, const cha
 		"--dump-file", dump_file,
 		(char *) swtpm_sock,
 		(char *) qemu_sock,
-		NULL,
+		nullptr,
 	};
 
 	close(dump_fd);
@@ -379,7 +379,7 @@ void _start_sockspy_exec(const char *data_dir, const char *swtpm_sock, const cha
 	croak("Cannot exec sockspy: exec(%s)", SOCKSPY_BIN);
 }
 
-static
+private
 int start_sockspy(const char *data_dir, char *swtpm_sock, char *qemu_sock)
 {
 	pid_t pid = fork();
@@ -393,18 +393,18 @@ int start_sockspy(const char *data_dir, char *swtpm_sock, char *qemu_sock)
 	return pid;
 }
 
-static
+private
 void _monitor_kill_all(size_t fds_count, struct pollfd fds[fds_count], int sig)
 {
 	for (size_t i = 0; i < fds_count; i++) {
 		if (fds[i].fd != -1) {
 			/* Best effort: We do not mind errors here. */
-			pidfd_send_signal(fds[i].fd, sig, NULL, 0);
+			pidfd_send_signal(fds[i].fd, sig, nullptr, 0);
 		}
 	}
 }
 
-static
+private
 void _monitor_handle_child(pid_t pid)
 {
 	int wstatus;
@@ -416,7 +416,7 @@ void _monitor_handle_child(pid_t pid)
 		printf("%d: Died (%d)\n", pid, WTERMSIG(wstatus));
 }
 
-static
+private
 int _monitor_handle_signal(int signalfd, size_t pid_count, struct pollfd fds[pid_count + 1])
 {
 	struct signalfd_siginfo info;
@@ -427,7 +427,7 @@ int _monitor_handle_signal(int signalfd, size_t pid_count, struct pollfd fds[pid
 	return info.ssi_signo;
 }
 
-static
+private
 bool _monitor_loop(size_t pid_count, pid_t pids[pid_count], struct pollfd fds[pid_count + 1])
 {
 	bool status = true;
@@ -456,7 +456,7 @@ bool _monitor_loop(size_t pid_count, pid_t pids[pid_count], struct pollfd fds[pi
 	return status;
 }
 
-static
+private
 bool monitor(size_t pid_count, pid_t pids[pid_count])
 {
 	sigset_t signals, previous;
@@ -473,7 +473,7 @@ bool monitor(size_t pid_count, pid_t pids[pid_count])
 
 	struct pollfd *fds = calloc(pid_count + 1, sizeof(struct pollfd));
 
-	if (fds == NULL)
+	if (fds == nullptr)
 		warn_jmp(restore_sigmask, "monitor: calloc()");
 
 	for (size_t i = 0; i < pid_count; i++) {
@@ -499,23 +499,23 @@ release_fds:
 	free(fds);
 
 restore_sigmask:
-	sigprocmask(SIG_SETMASK, &previous, NULL);
+	sigprocmask(SIG_SETMASK, &previous, nullptr);
 	return status;
 }
 
 private
 bool _create_data_dir(size_t path_size, char path[path_size])
 {
-	time_t epoch = time(NULL);
+	time_t epoch = time(nullptr);
 
 	struct tm tm;
-	if (localtime_r(&epoch, &tm) == NULL)
+	if (localtime_r(&epoch, &tm) == nullptr)
 		croak("localtime_r()");
 
 	if (strftime(path, path_size, "/var/tmp/tpmspy-%Y%m%d-%H%M-XXXXXX", &tm) == 0)
 		croak("strftime()");
 
-	if (mkdtemp(path) == NULL)
+	if (mkdtemp(path) == nullptr)
 		return warn_v(false, "mkdtemp()");
 
 	if (chmod(path, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) != 0)
@@ -544,7 +544,7 @@ int main(int argc, char *argv[])
 
 	errno = 0;
 	char *qemu_sock = extract_socket_path(argv[unixio_arg]);
-	if (qemu_sock == NULL)
+	if (qemu_sock == nullptr)
 		die("Cannot extract socket path from \"%s\"", argv[unixio_arg]);
 
 	/* Create a temporary directory for outputs. */

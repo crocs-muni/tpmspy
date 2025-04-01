@@ -1,4 +1,5 @@
-#if !defined(MSG_H)
+#pragma once
+#ifndef MSG_H
 #define MSG_H
 
 #include <err.h>

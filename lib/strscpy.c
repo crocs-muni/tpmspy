@@ -4,12 +4,12 @@
 #include <errno.h>
 #include <string.h>
 
-#include <stdio.h>
+#include "defs.h"
 
 ssize_t strscpy(char dst[restrict], const char src[restrict], size_t size)
 {
-	assert(dst != NULL);
-	assert(src != NULL);
+	assert(dst != nullptr);
+	assert(src != nullptr);
 
 	/* An array of size zero cannot hold even an empty string. */
 	if (size == 0)

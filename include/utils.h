@@ -1,4 +1,5 @@
-#if !defined(SOCKSPY_UTILS_H)
+#pragma once
+#ifndef SOCKSPY_UTILS_H
 #define SOCKSPY_UTILS_H
 
 #include <string.h>
