@@ -6,7 +6,7 @@ project(sockspy)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Common flags.
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -std=c2x -pedantic -Wall -Wextra")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -std=c23 -pedantic -Wall -Wextra")
 add_compile_definitions(-D_DEFAULT_SOURCE)
 
 add_compile_options(-fsanitize=address)

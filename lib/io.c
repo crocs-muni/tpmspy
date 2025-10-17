@@ -3,7 +3,50 @@
 #include <assert.h>
 #include <stdlib.h>
 
-#include "defs.h"
+#include <unistd.h>
+
+#include "msg.h"
+#include "socket.h"
+
+struct io *io_dup(struct io *io)
+{
+	assert(io != nullptr);
+	assert(io->refs > 0);
+
+	io->refs++;
+	return io;
+}
+
+bool io_close(struct io *io)
+{
+	assert(io != nullptr);
+	assert(io->refs > 0);
+
+	if (io->refs > 1) {
+		io->refs--;
+		return false;
+	}
+
+	switch (io->type) {
+	case IO_CLOSED:
+		/* NOP */;
+		break;
+
+	case IO_STD:
+	case IO_SIGFD:
+		close(io->std);
+		break;
+
+	case IO_SOCKET:
+		socket_close(io->socket);
+		break;
+
+	default:
+		bug("io_close() on unknown IO_(%02x)", io->type);
+	}
+
+	return true;
+}
 
 void io_chain_create(struct io **head)
 {

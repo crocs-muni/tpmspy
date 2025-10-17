@@ -95,7 +95,7 @@ void _passthrough_check_exe_loop(void)
 private no_return
 void passthrough(int /*argc*/, char *argv[])
 {
-	/* Prevent unwanted loops if, by accident, we aready are run as the
+	/* Prevent unwanted loops if, by accident, we already are run as the
 	 * target binary. */
 	_passthrough_check_exe_loop();
 
@@ -363,6 +363,9 @@ void _start_sockspy_exec(const char *data_dir, const char *swtpm_sock, const cha
 			|| dup2(log_fd, STDOUT_FILENO) == -1
 			|| dup2(log_fd, STDERR_FILENO) == -1)
 		croak("Cannot exec sockspy: I/O redirection failed");
+
+	if (setenv("LSAN_OPTIONS", "verbosity=1:log_threads=1", 1) != 0)
+		warn("_start_sockspy_exec(): setenv()");
 
 	char *args[] = {
 		(char *) SOCKSPY_BIN,

@@ -2,6 +2,8 @@
 #ifndef IO_H
 #define IO_H
 
+#include <stddef.h>
+
 struct io {
 	enum {
 		IO_CLOSED,
@@ -16,10 +18,17 @@ struct io {
 		struct socket *socket;
 	};
 
+	size_t refs;
 	struct io *next;
 };
 
 #define UNINITIALISED_IO (struct io){ .type = IO_CLOSED }
+
+[[nodiscard]]
+struct io *io_dup(struct io *io);
+
+[[nodiscard("Must be free()d when evaluated to true")]]
+bool io_close(struct io *io);
 
 void io_chain_create(struct io **head);
 void io_chain_destroy(struct io **head);
