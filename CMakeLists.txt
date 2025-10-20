@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.18)
 
-project(sockspy)
+project(tpmspy)
 
 # Create 'compile_commands.json' to be used by LSP.
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -22,22 +22,22 @@ pkg_check_modules(SODIUM REQUIRED libsodium)
 # Include headers.
 include_directories(${PROJECT_SOURCE_DIR}/include)
 
-# The 'sockspy' library for common testable routines.
-file(GLOB sockspy_lib_sources ${PROJECT_SOURCE_DIR}/lib/*.c)
-add_library(sockspy ${sockspy_lib_sources})
+# The 'tpmspy' library for common testable routines.
+file(GLOB tpmspy_lib_sources ${PROJECT_SOURCE_DIR}/lib/*.c)
+add_library(tpmspy ${tpmspy_lib_sources})
 
 # The 'json' library from CCAN.
 # http://git.ozlabs.org/?p=ccan;a=tree;f=ccan/json
 #file(GLOB json_lib_sources ${PROJECT_SOURCE_DIR}/json/*.c)
 #add_library(json ${json_lib_sources})
 
-# The 'sockspy' binary.
-file(GLOB sockspy_bin_sources ${PROJECT_SOURCE_DIR}/src/*.c)
-add_executable(sockspy_bin ${sockspy_bin_sources})
-target_link_libraries(sockspy_bin sockspy ${EV_LIBRARIES})
-target_include_directories(sockspy_bin PUBLIC ${EV_INCLUDE_DIRS})
-target_compile_options(sockspy_bin PUBLIC ${EV_CFLAGS_OTHER})
-set_property(TARGET sockspy_bin PROPERTY OUTPUT_NAME sockspy)
+# The 'tpmspy' binary.
+file(GLOB tpmspy_bin_sources ${PROJECT_SOURCE_DIR}/src/*.c)
+add_executable(tpmspy_bin ${tpmspy_bin_sources})
+target_link_libraries(tpmspy_bin tpmspy ${EV_LIBRARIES})
+target_include_directories(tpmspy_bin PUBLIC ${EV_INCLUDE_DIRS})
+target_compile_options(tpmspy_bin PUBLIC ${EV_CFLAGS_OTHER})
+set_property(TARGET tpmspy_bin PROPERTY OUTPUT_NAME tpmspy)
 
 # The 'swtpm-gate' binary.
 file(GLOB swtpm_gate_sources ${PROJECT_SOURCE_DIR}/swtpm/*.c)
@@ -47,13 +47,13 @@ set_property(TARGET swtpm_gate_bin PROPERTY OUTPUT_NAME swtpm)
 # The 'sws' utility.
 file(GLOB util_sws_sources ${PROJECT_SOURCE_DIR}/sws/*.c)
 add_executable(util_sws_bin ${util_sws_sources})
-target_link_libraries(util_sws_bin sockspy)
+target_link_libraries(util_sws_bin tpmspy)
 set_property(TARGET util_sws_bin PROPERTY OUTPUT_NAME sws)
 
 # The 'dump' utility.
 file(GLOB util_dump_sources ${PROJECT_SOURCE_DIR}/dump/*.c)
 add_executable(util_dump ${util_dump_sources})
-target_link_libraries(util_dump sockspy ${JSONC_LIBRARIES} ${SODIUM_LIBRARIES})
+target_link_libraries(util_dump tpmspy ${JSONC_LIBRARIES} ${SODIUM_LIBRARIES})
 target_include_directories(util_dump PUBLIC ${JSONC_INCLUDE_DIRS}
 	${SODIUM_INCLUDE_DIRS})
 target_compile_options(util_dump PUBLIC ${JSONC_CFLAGS_OTHER}
@@ -61,11 +61,11 @@ target_compile_options(util_dump PUBLIC ${JSONC_CFLAGS_OTHER}
 set_property(TARGET util_dump PROPERTY OUTPUT_NAME dump)
 
 # The tests binary.
-file(GLOB sockspy_test_sources
+file(GLOB tpmspy_test_sources
 	${PROJECT_SOURCE_DIR}/test/*.c
 	${PROJECT_SOURCE_DIR}/test/*.cpp
 )
 
-add_executable(sockspy_test ${sockspy_test_sources})
-target_link_libraries(sockspy_test sockspy)
-set_property(TARGET sockspy_test PROPERTY OUTPUT_NAME tests)
+add_executable(tpmspy_test ${tpmspy_test_sources})
+target_link_libraries(tpmspy_test tpmspy)
+set_property(TARGET tpmspy_test PROPERTY OUTPUT_NAME tests)

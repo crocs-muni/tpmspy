@@ -1,10 +1,60 @@
 /*
- * swtpm          sockspy              qemu
- *     □ ◀─────── ▣     □▣ ◀────────── □
- *                ┊     ┊┊
- *                ┊     ┊┊
- *   TPM_CLIENT  ┄┘     ┊└┄┄ QEMU_CLIENT
- *                      └┄┄┄ QEMU_SERVER
+ * TPMSpy: Relay packets between qemu and swtpm.
+ *
+ *
+ * General overview
+ * ----------------
+ *
+ * Ordinarily, QEMU and swtpm interact as follows:
+ *
+ * 1. Before a VM is started, if swtpm is not already running:
+ *    a) QEMU start swtpm if it is not already running.
+ *    b) swtpm creates a controlling UNIX socket.
+ * 2. When a VM is started:
+ *    a) QEMU connects to the controlling socket.
+ *    b_ QEMU creates a data channel (what the system inside VM actually sees)
+ *       by passing a descriptor via the created control channel
+ *       (CMD_SET_DATAFD).
+ *
+ * Thus, there is only one swtpm instance, and each VM has its own
+ * connection.
+ *
+ * TPMSpy inserts itself acts as a proxy to swtpm. The auxiliary program 'swtpm'
+ * in this repository masquarades as actual swtpm. When QEMU invokes it,
+ * it starts tpmspy and the actual swtpm.
+ *
+ * The workflow is then modified as follows:
+ *
+ * 1. Before a VM is started, if swtpm is not already running:
+ *    a) QEMU start swtpm if it is not already running.
+ *       This is actually a fake program, which starts TPMSpy and real swtpm.
+ *    b) TPMSpy and swtpm create a controlling UNIX socket, but they
+ *       do not interact yet.
+ * 2. When a VM is started:
+ *    a) QEMU connects to the TPMSpy's controlling socket.
+ *    b) TPMSpy completes the channel by connecting to the swtpm's controlling
+ *       socket.
+ *    c) QEMU creates a data channel (what the system inside VM actually
+ *       sees) by passing a descriptor via the created control channel
+ *       (CMD_SET_DATAFD). TPMSpy intercepts this request, creates another
+ *       channel and passes a new descriptor to the swtpm.
+ *
+ * Thus, tpmspy relays packets between four descriptors {control, data}
+ * × {QEMU, swtpm} for each VM. Captured packets are stored in directories
+ * created in /var/tmp for each connection (VM) separately.
+ *
+ * swtpm          tpmspy              qemu
+ *                    □
+ *     □ ◀─────── ▣   ┊▣ ◀─────────── □
+ *     □ ◀─────── ▣   ┊▣ ◀─────────── □
+ *                ┊   ┊┊
+ *                ┊   ┊┊
+ *   TPM_CLIENT  ┄┘   ┊└┄┄ QEMU_CLIENT
+ *                    └┄┄┄ QEMU_SERVER
+ *
+ * Do note that simply rebooting a VM causes QEMU to continue using the
+ * existing connection. To create a new capture, the VM must be stopped
+ * completely and booted up cold.
  */
 
 #include <errno.h>

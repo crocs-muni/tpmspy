@@ -1,5 +1,5 @@
 /*
- * swtpm — An interceptor utility that spawns real ‹swtpm› and ‹sockspy›
+ * swtpm — An interceptor utility that spawns real ‹swtpm› and ‹tpmspy›
  *
  * ‹virt-manager› usually starts ‹swtpm› with ‹exec*p()› call, which in
  * turn resolves to ‹/usr/bin/swtpm›. If we have ‹/usr/local/bin› in ‹$PATH›
@@ -13,7 +13,7 @@
  *
  * By default, all commands should be passed to ‹/usr/bin/swtpm›.
  * The ‹socket --ctrl type=unixio,path=$SOCK …› should be diverged, however,
- * with putting ‹sockspy›'s own socket in the argument before passing it
+ * with putting ‹tpmspy›'s own socket in the argument before passing it
  * to real ‹swtpm›. */
 
 #include <assert.h>
@@ -46,7 +46,7 @@ private
 const char SWTPM_BIN[] = "/usr/bin/swtpm";
 
 private
-const char SOCKSPY_BIN[] = "/usr/local/bin/sockspy";
+const char TPMSPY_BIN[] = "/usr/local/bin/tpmspy";
 
 private
 const int POLL_TIMEOUT = 2000;
@@ -343,32 +343,32 @@ cleanup_sock_name:
 }
 
 private no_return
-void _start_sockspy_exec(const char *data_dir, const char *swtpm_sock, const char *qemu_sock)
+void _start_tpmspy_exec(const char *data_dir, const char *swtpm_sock, const char *qemu_sock)
 {
 	char dump_file[PATH_MAX], log_file[PATH_MAX];
 	snprintf(dump_file, sizeof(dump_file), "%s/packets.bin", data_dir);
 	int dump_fd = creat_excl(dump_file, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 
 	if (dump_fd == -1)
-		croak("Cannot exec sockspy: open(%s)", dump_file);
+		croak("Cannot exec tpmspy: open(%s)", dump_file);
 
 	snprintf(log_file, sizeof(log_file), "%s/tpmspy.log", data_dir);
 	int log_fd = creat_excl(log_file, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 
 	if (log_fd == -1)
-		croak("Cannot exec sockspy: open(%s)", log_file);
+		croak("Cannot exec tpmspy: open(%s)", log_file);
 
 	/* Redirect stdin. */
 	if (!_open_to("/dev/null", O_RDONLY, STDIN_FILENO)
 			|| dup2(log_fd, STDOUT_FILENO) == -1
 			|| dup2(log_fd, STDERR_FILENO) == -1)
-		croak("Cannot exec sockspy: I/O redirection failed");
+		croak("Cannot exec tpmspy: I/O redirection failed");
 
 	if (setenv("LSAN_OPTIONS", "verbosity=1:log_threads=1", 1) != 0)
-		warn("_start_sockspy_exec(): setenv()");
+		warn("_start_tpmspy_exec(): setenv()");
 
 	char *args[] = {
-		(char *) SOCKSPY_BIN,
+		(char *) TPMSPY_BIN,
 		"--dump-file", dump_file,
 		(char *) swtpm_sock,
 		(char *) qemu_sock,
@@ -378,20 +378,20 @@ void _start_sockspy_exec(const char *data_dir, const char *swtpm_sock, const cha
 	close(dump_fd);
 	close(log_fd);
 
-	execv(SOCKSPY_BIN, args);
-	croak("Cannot exec sockspy: exec(%s)", SOCKSPY_BIN);
+	execv(TPMSPY_BIN, args);
+	croak("Cannot exec tpmspy: exec(%s)", TPMSPY_BIN);
 }
 
 private
-int start_sockspy(const char *data_dir, char *swtpm_sock, char *qemu_sock)
+int start_tpmspy(const char *data_dir, char *swtpm_sock, char *qemu_sock)
 {
 	pid_t pid = fork();
 
 	if (pid == -1)
-		return warn_v(-1, "Cannot start sockspy: fork()");
+		return warn_v(-1, "Cannot start tpmspy: fork()");
 
 	if (pid == 0)
-		/* noreturn */ _start_sockspy_exec(data_dir, swtpm_sock, qemu_sock);
+		/* noreturn */ _start_tpmspy_exec(data_dir, swtpm_sock, qemu_sock);
 
 	return pid;
 }
@@ -567,17 +567,17 @@ int main(int argc, char *argv[])
 	if (swtpm_pid == -1)
 		warn_jmp(cleanup_paths, "Cannot start swtpm");
 
-	/* 2: Start ‹sockspy› to bridge (modified) ‹swtpm_sock› now handled
+	/* 2: Start ‹tpmspy› to bridge (modified) ‹swtpm_sock› now handled
 	 *    by ‹swtpm›, and the original ‹qemu_sock› expected by QEMU. */
-	pid_t sockspy_pid = start_sockspy(data_dir, swtpm_sock, qemu_sock);
-	if (sockspy_pid == -1) {
+	pid_t tpmspy_pid = start_tpmspy(data_dir, swtpm_sock, qemu_sock);
+	if (tpmspy_pid == -1) {
 		kill(swtpm_pid, SIGTERM);
 		goto cleanup_paths;
 	}
 
 	/* 3: Wait for both processes to exit. On SIGINT or SIGTERM, relay
 	 *    the signals to both processes. */
-	monitor(2, (pid_t[]){ swtpm_pid, sockspy_pid, -1 });
+	monitor(2, (pid_t[]){ swtpm_pid, tpmspy_pid, -1 });
 
 cleanup_paths:
 	free(argv[unixio_arg]);
