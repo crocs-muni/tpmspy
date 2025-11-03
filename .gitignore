@@ -1,8 +1,9 @@
 # Temporary and editor files
 *.swp
 
-# Build directory
+# Build and distribution directory
 /build/
+/dist/
 
 # Data directory
 /data/
