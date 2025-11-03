@@ -1,0 +1,2 @@
+option('asan', type: 'feature', value: 'disabled', description: 'Enable AddressSanitizer')
+option('test', type: 'feature', value: 'disabled', description: 'Compile tests')
