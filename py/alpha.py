@@ -118,8 +118,8 @@ def get_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("files", nargs="+", help="Input JSON files")
     parser.add_argument("-o", "--output", default="graph.svg", help="Output file (default: graph.svg)")
     parser.add_argument("--pcrs", type=int, default=16, help="Number of PCRs to plot (1 to 24)")
-    parser.add_argument("--start", type=float, default=-1.0, help="Start of the slice of the trace to display")
-    parser.add_argument("--end", type=float, default=3.0, help="End of the slice of the trace to display")
+    parser.add_argument("--start", type=float, default=-0.25, help="Start of the slice of the trace to display")
+    parser.add_argument("--end", type=float, default=5.0, help="End of the slice of the trace to display")
     parser.add_argument("--title", default="PCR vs Time", help="Graph title")
     return parser
 
