@@ -74,12 +74,14 @@
 #include <ev.h>
 
 #include "asserts.h"
-#include "capture.h"
 #include "conntrack.h"
 #include "defs.h"
 #include "msg.h"
+#include "sinks.h"
 #include "socket.h"
 #include "sockspy.h"
+#include "strings.h"
+#include "trace.h"
 
 #define CONFIG_OUTPUT_COLS 20
 
@@ -175,9 +177,11 @@ void context_remove_socket(struct context *ctx, const struct socket_watcher *sw)
 		}
 	}
 
-	fprintf(stderr, "socket type %d, value %d\n", sw->sock.type, sw->sock.fd);
-	if (sw->capture != nullptr)
-		tpm_capture_close(sw->capture);
+	__trace("Closing socket type=%d, fd=%d", sw->sock.type, sw->sock.fd);
+
+	/* Server socket has no sinks. */
+	if (!(sw->sock.type & SOCKET_TYPE_SERVER) && sw->sink_ctx != nullptr)
+		sinks_close(sw->ctx->sinks, sw->sink_ctx);
 
 	free((void *) sw);
 }
@@ -284,7 +288,7 @@ int _socket_spawn_link(struct context *ctx, int src_new_fd,
 		return warn_v(-1, "getsockopt(SO_PROTOCOL)");
 
 	if (src_domain != AF_UNIX)
-		return warnx_v(-1, "Sockets other than AF_UNIX(%d) not supported, (%d) passed", AF_UNIX, src_domain);
+		return warnx_v(-1, "Sockets other than AF_(%d) (UNIX) are not supported, AF_(%d) passed", AF_UNIX, src_domain);
 
 	int dst_new_fd[2];
 	if (socketpair(src_domain, src_type | SOCK_NONBLOCK, src_protocol, dst_new_fd) < 0)
@@ -355,9 +359,6 @@ ssize_t _socket_recv(struct context *ctx, struct socket_watcher *src, struct soc
 			memset(&stamp, 0, sizeof(stamp));
 		}
 
-		ssize_t logsize = message[recv - 1] == '\n' ? recv - 1 : recv;
-		log(log, "   text %2d: %.*s", src->sock.fd, (int) logsize, message);
-
 		total += recv;
 
 		int new_fd[2] = { -1, -1 };
@@ -378,13 +379,15 @@ ssize_t _socket_recv(struct context *ctx, struct socket_watcher *src, struct soc
 			}
 
 			new_fd[0] = fds[0];
-			log(log, "   lnk1 %2d [via %2d]", new_fd[0], src->sock.fd);
+			log(log, "   New link passed via ancillary messages");
+			log(log, "     End 1: fd %d via fd %d", new_fd[0], src->sock.fd);
 
 			struct socket_watcher *parent_link[] = { src, dst };
 			if ((new_fd[1] = _socket_spawn_link(ctx, new_fd[0], parent_link, new_link)) < 0)
 				close(new_fd[0]);
 
-			log(log, "   lnk2 %2d [via %2d]", new_fd[1], dst->sock.fd);
+			log(log, "     End 2: fd %d via fd %d", new_link[1]->sock.fd, dst->sock.fd);
+			log(log, "       (From socketpair [%d, %d])", new_link[1]->sock.fd, new_fd[1]);
 
 			// TODO: Make new socket tagging more generic.
 			new_link[0]->sock.type |= SOCKET_LINK_QEMU;
@@ -399,27 +402,31 @@ ssize_t _socket_recv(struct context *ctx, struct socket_watcher *src, struct soc
 		if (sendmsg(dst->sock.fd, &msg, MSG_NOSIGNAL) == -1)
 			warn("sendmsg()");
 
-		if (new_fd[1] != -1) {
+		if (new_fd[1] != -1)
 			close(new_fd[1]);
-			// new_fd[1] = new_link[1]->sock.fd;
-		}
 
-		struct socket_watcher *link[] = { src, dst };
-		tpm_capture_write(link, &stamp, new_link, &msg.msg_iov[0]);
+		// struct socket_watcher *link[] = { src, dst };
+		// tpm_capture_write(link, &stamp, new_link, &msg.msg_iov[0]);
+		sinks_dispatch(ctx->sinks, src->sink_ctx, &(struct sink_message){
+			.stamp = &stamp,
+			.link = { src, dst },
+			.new_link = { new_link[0], new_link[1] },
+			.payload = &msg.msg_iov[0],
+		});
 	}
 
-	log(log, "   size %8zd", total);
+	log(log, "   Transferred %zd B in total", total);
 
 	if (recv == -1) {
 		if (errno == EAGAIN || errno == EWOULDBLOCK)
 			return total;
 
-		log(log, "FD err  %2d: %s", src->sock.fd, strerror(errno));
+		log(log, "fd %d: %s", src->sock.fd, strerror(errno));
 		return -1;
 	}
 
 	if (recv == 0) {
-		log(log, "FD down %2d", src->sock.fd);
+		log(log, "fd %d: End of file", src->sock.fd);
 		return -1;
 	}
 
@@ -433,7 +440,7 @@ void _socket_splice_disconnect(struct context *ctx, struct conntrack_entry *link
 	const struct io *log = &ctx->options->log;
 
 	if (link != nullptr) {
-		log(log, "   xlnk %2d <-> %2d", link->a, link->b);
+		log(log, "   Dropping link between fd %d and fd %d", link->a, link->b);
 		conntrack_remove(&ctx->conns, link);
 	}
 
@@ -442,7 +449,7 @@ void _socket_splice_disconnect(struct context *ctx, struct conntrack_entry *link
 		if (watchers[i] == nullptr)
 			continue;
 
-		log(log, "IO clse %2d", watchers[i]->sock.fd);
+		log(log, "   Closing fd %d", watchers[i]->sock.fd);
 		context_close_socket(ctx, watchers[i]);
 	}
 }
@@ -457,7 +464,8 @@ ssize_t _socket_splice(struct socket_watcher *src)
 	const struct io *log = &ctx->options->log;
 
 	socket_type_str(ctx->buffer_size, ctx->buffer, src->sock.type);
-	log(log, "IO from %2d [type %02x %s]", src->sock.fd, src->sock.type, ctx->buffer);
+	log(log, "** Message captured");
+	log(log, "   Source fd %d, type %02x \"%s\"", src->sock.fd, src->sock.type, ctx->buffer);
 
 	struct conntrack_entry *link = conntrack_find_mut(&ctx->conns, nullptr, src->sock.fd);
 
@@ -477,7 +485,7 @@ ssize_t _socket_splice(struct socket_watcher *src)
 	}
 
 	socket_type_str(ctx->buffer_size, ctx->buffer, dst->sock.type);
-	log(log, "   to   %2d [type %02x %s]", dst->sock.fd, dst->sock.type, ctx->buffer);
+	log(log, "   Destination fd %d, type %02x \"%s\"", dst->sock.fd, dst->sock.type, ctx->buffer);
 	ssize_t total = _socket_recv(ctx, src, dst);
 
 	if (total < 0)
@@ -552,7 +560,7 @@ struct socket_watcher *_qemu_setup_uplink(struct context *ctx)
 {
 	struct socket sock_tpm;
 	if (!socket_client(ctx->options->swtpm_path, &sock_tpm))
-		return warn_v(nullptr, "_qemu_setup_uplink(): Cannot connect to swTPM");
+		return warn_v(nullptr, "_qemu_setup_uplink(): Cannot connect to swtpm at %s", ctx->options->swtpm_path);
 
 	sock_tpm.type |= SOCKET_LINK_SWTPM;
 
@@ -569,7 +577,7 @@ close_socket:
 }
 
 private
-void handle_qemu_connect(struct ev_loop * /*loop*/, ev_io *watcher, int revents)
+void handle_qemu_connect(struct ev_loop *loop, ev_io *watcher, int revents)
 {
 	if ((revents & (POLL_ERR | POLL_HUP)) != 0)
 		errx(EXIT_FAILURE, "QEMU: ERR or HUP");
@@ -584,32 +592,29 @@ void handle_qemu_connect(struct ev_loop * /*loop*/, ev_io *watcher, int revents)
 		return;
 	}
 
-	if ((sw_qemu_client->capture = tpm_capture_open(sw_qemu_server->ctx, sw_qemu_server->ctx->accept_counter++)) == nullptr) {
-		warn("handle_qemu_connect(): Failed to open capture file");
-		goto fail_qemu_socket;
-	}
+	sw_qemu_server->ctx->accept_counter++;
+	if ((sw_qemu_client->sink_ctx = sinks_open(sw_qemu_server->ctx->sinks, sw_qemu_server->ctx)) == nullptr)
+		warnx_jmp(fail_qemu_socket, "handle_qemu_connect(): Failed to open sinks");
 
 	char buffer[256];
 	socket_type_str(sizeof(buffer), buffer, sw_qemu_server->sock.type);
-	log(log, "FD conn %2d [type %02x %s]", sw_qemu_server->sock.fd, sw_qemu_server->sock.type, buffer);
+	log(log, "** Client connected");
+	log(log, "   Server fd %d, type %02x \"%s\"", sw_qemu_server->sock.fd, sw_qemu_server->sock.type, buffer);
 
 	socket_type_str(sizeof(buffer), buffer, sw_qemu_client->sock.type);
-	log(log, "   lnk1 %2d [type %02x %s]", sw_qemu_client->sock.fd, sw_qemu_client->sock.type, buffer);
+	log(log, "   Link end 1: fd %d, type %02x \"%s\"", sw_qemu_client->sock.fd, sw_qemu_client->sock.type, buffer);
 
 	struct socket_watcher *sw_tpm = _qemu_setup_uplink(sw_qemu_server->ctx);
 
 	if (sw_tpm == nullptr) {
-		warn("handle_qemu_connect(): Failed to connect to swTPM");
+		warn("handle_qemu_connect(): Failed to connect to swtpm");
 		goto fail_qemu_capture;
 	}
 
-	if ((sw_tpm->capture = io_dup(sw_qemu_client->capture)) == nullptr) {
-		warn("handle_qemu_connect(): Failed to dup capture IO");
-		goto fail_swtpm_socket;
-	}
+	sw_tpm->sink_ctx = sinks_dup(sw_qemu_client->sink_ctx);
 
 	socket_type_str(sizeof(buffer), buffer, sw_tpm->sock.type);
-	log(log, "   lnk2 %2d [type %02x %s]", sw_tpm->sock.fd, sw_tpm->sock.type, buffer);
+	log(log, "   Link end 2: fd %d, type %02x \"%s\"", sw_tpm->sock.fd, sw_tpm->sock.type, buffer);
 
 	struct conntrack_entry new_connection = {
 		sw_qemu_client->sock.fd,
@@ -618,26 +623,25 @@ void handle_qemu_connect(struct ev_loop * /*loop*/, ev_io *watcher, int revents)
 
 	if (!conntrack_add(&sw_qemu_server->ctx->conns, new_connection)) {
 		warn("handle_qemu_connect(): Conntrack failure");
-		goto fail_swtpm_capture;
+		goto fail_swtpm_socket;
 	}
 
 	socket_watcher_io_start(sw_qemu_client, &handle_socket);
 	socket_watcher_io_start(sw_tpm, &handle_socket);
 	return;
 
-fail_swtpm_capture:
-	tpm_capture_close(sw_tpm->capture);
-
 fail_swtpm_socket:
 	close(sw_tpm->sock.fd);
 	context_remove_socket(sw_qemu_server->ctx, sw_tpm);
 
 fail_qemu_capture:
-	tpm_capture_close(sw_qemu_client->capture);
+	// This is done in context_remove_socket()
+	//sinks_close(sw_qemu_client->ctx->sinks, sw_qemu_client->sink_ctx);
 
 fail_qemu_socket:
 	close(sw_qemu_client->sock.fd);
 	context_remove_socket(sw_qemu_server->ctx, sw_qemu_client);
+	_handle_socket_check_exit(loop, sw_qemu_server->ctx);
 }
 
 typedef void (signal_cb_t)(struct ev_loop *, ev_signal *, int);
@@ -658,11 +662,14 @@ bool setup_signal(struct ev_loop *loop, struct ev_signal *watcher, int signum, s
 }
 
 private
-bool run_relay(const struct options *options, const struct socket *sock_qemu_srv)
+bool run_relay(const struct options *options, const struct socket *sock_qemu_srv,
+		const struct sinks *sinks)
 {
 	struct ev_loop *loop = ev_loop_new(EVFLAG_AUTO | EVFLAG_SIGNALFD);
+
 	struct context ctx = {
 		.loop = loop,
+		.sinks = sinks,
 		.options = options,
 	};
 
@@ -689,11 +696,11 @@ bool run_relay(const struct options *options, const struct socket *sock_qemu_srv
 	return true;
 }
 
-const char SHORT_OPTS[] = "hL:D:";
+const char SHORT_OPTS[] = "hL:D:o:";
 const struct option LONG_OPTS[] = {
 	{ "help", no_argument, nullptr, 'h' },
 	{ "log-file", required_argument, nullptr, 'L' },
-	{ "dump-file", required_argument, nullptr, 'D' },
+	{ "sink", required_argument, nullptr, 'o' },
 
 	{ },
 };
@@ -702,7 +709,7 @@ private
 void usage(FILE *stream)
 {
 	extern const char *__progname;
-	fprintf(stream, "usage: %s [-D|--dump-file=FILE] [-L|--log-file=FILE] SOCK_SWTPM SOCK_QEMU\n", __progname);
+	fprintf(stream, "usage: %s [-L|--log-file=FILE] [-o|--sink=MODULE[,ARGS...]] SOCK_SWTPM SOCK_QEMU\n", __progname);
 }
 
 private
@@ -715,22 +722,15 @@ void options_process(struct options *options, int *argc, char **argv)
 			usage(stdout);
 			exit(EXIT_SUCCESS);
 
-		case 'D':
-			char *s;
-			if ((s = strchr(optarg, '%')) != nullptr) {
-				if (s[1] != 'd')
-					errx(EXIT_FAILURE, "-D %s: %% must be followed by d", optarg);
-				if (strchr(&s[1], '%') != nullptr)
-					errx(EXIT_FAILURE, "-D %s: At most one %% mark is allowed", optarg);
-			}
-
-			options->dump_base = optarg;
-			break;
-
 		case 'L':
 			if ((options->log.std = open(optarg, O_WRONLY | O_CREAT | O_APPEND, 0600)) == -1)
 				err(EXIT_FAILURE, "%s", optarg);
 			options->log.type = IO_STD;
+			break;
+
+		case 'o':
+			if (!strings_add(&options->sinks, optarg))
+				err(EXIT_FAILURE, "strings_add(sinks, \"%s\")", optarg);
 			break;
 
 		default:
@@ -751,35 +751,42 @@ int main(int argc, char *argv[])
 {
 	struct options options = {
 		.log = UNINITIALISED_IO,
+		.sinks = strings_new(),
 	};
 
+	if (options.sinks == nullptr)
+		err(EXIT_FAILURE, "strings_new()");
+
+	int status = EXIT_FAILURE;
 	options_process(&options, &argc, argv);
 
 	if (argc != 3) {
 		usage(stderr);
-		return EXIT_FAILURE;
+		goto leave;
 	}
 
 	options.swtpm_path = argv[1];
 	options.qemu_path = argv[2];
-
-	int status = EXIT_FAILURE;
 
 	if (options.log.type == IO_CLOSED) {
 		options.log.type = IO_STD;
 		options.log.std = STDOUT_FILENO;
 	}
 
+	struct sinks *sinks = sinks_load(options.sinks->size, (char **) options.sinks->data);
+	if (sinks == nullptr)
+		goto leave;
+
 	struct socket sock_qemu_srv = {};
 
 	if (!socket_server(options.qemu_path, &sock_qemu_srv)) {
 		warn("%s: Cannot start server", argv[2]);
-		goto leave;
+		goto close_sinks;
 	}
 
 	sock_qemu_srv.type |= SOCKET_LINK_QEMU;
 
-	if (!run_relay(&options, &sock_qemu_srv)) {
+	if (!run_relay(&options, &sock_qemu_srv, sinks)) {
 		goto close_sock_qemu;
 	}
 
@@ -787,6 +794,10 @@ close_sock_qemu:
 	if (!socket_close(&sock_qemu_srv))
 		warn("%s", sock_qemu_srv.source.path);
 
+close_sinks:
+	sinks_free(&sinks);
+
 leave:
+	strings_free(&options.sinks);
 	return status;
 }
