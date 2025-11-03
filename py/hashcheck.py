@@ -19,14 +19,12 @@ class Trace:
     extend: list[tuple[int, str]]
     digest: str | None
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.extend = []
         self.digest = None
 
-
     def add(self, pcr: int, digest: str) -> None:
         self.extend.append((pcr, digest))
-
 
     def get_digest(self) -> str:
         if self.digest is not None:
@@ -53,13 +51,12 @@ class TraceList:
             self.trace = trace
             self.count = 0
 
-        def inc(self):
+        def inc(self) -> None:
             self.count += 1
-
 
     traces: dict[str, TraceListEntry]
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.traces = {}
 
     def add_trace(self, trace: Trace) -> None:
@@ -84,7 +81,6 @@ def _trace_add_packet(file_name: str, trace: Trace, extend: Any, alg: str) -> No
             return
 
     print(f"{file_name}: PCR_Extend with no {alg} digest", file=sys.stderr)
-
 
 
 def trace_create(file_name: str, packets: Any, alg: str) -> Trace:
@@ -129,7 +125,7 @@ def die(s: str) -> None:
     sys.exit(1)
 
 
-def main():
+def main() -> None:
     argp = get_arg_parser()
     args = argp.parse_args()
 

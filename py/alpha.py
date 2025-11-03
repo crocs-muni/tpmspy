@@ -10,6 +10,8 @@ import random
 import sys
 
 from contextlib import contextmanager
+from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 from typing import Any
 from typing import Generator as RawGenerator
 from typing import TypeAlias
@@ -17,9 +19,11 @@ from typing import TypeVar
 
 T = TypeVar('T')
 ContextManager: TypeAlias = RawGenerator[T, None, None]
+Packet: TypeAlias = dict[str, dict[str, Any]]
+
 
 @contextmanager
-def create_subplots(**kwargs: Any) -> ContextManager[tuple[plt.Figure, Any]]:
+def create_subplots(**kwargs: Any) -> ContextManager[tuple[Figure, Any]]:
     # The library sometimes complains about too many open figures, so we will
     # provide a context manager to take care of resources.
     fig, axs = plt.subplots(**kwargs)
@@ -43,35 +47,34 @@ def matplotlib_setup() -> None:
     ])
 
 
-def _pcr_extend(fig, ax, t, packet):
+def _pcr_extend(fig: Figure, ax: Axes, t: int, packet: Packet) -> None:
     pcr = packet.get("attr", {}).get("pcr-index", None)
 
     if pcr is None:
         return
 
     ax.plot(t, pcr,
-        color='r',
-        alpha=0.2,
-        marker='o',
-        markersize=6,
-        linestyle='None',
-        label='PCR_Extend(' + str(pcr) + ')'
-    )
+            color='r',
+            alpha=0.2,
+            marker='o',
+            markersize=6,
+            linestyle='None',
+            label='PCR_Extend(' + str(pcr) + ')')
 
 
 def _flatten(outer: [[any]]) -> [any]:
     return [item for inner in outer for item in inner]
 
 
-def _unique(l: [any]) -> [any]:
-    return list(set(l))
+def _unique(lst: [any]) -> [any]:
+    return list(set(lst))
 
 
-def _pcr_read(fig, ax, t, packet):
+def _pcr_read(fig: Figure, ax: Axes, t: int, packet: Packet) -> None:
     pass
 
 
-def _cmd_generic_cfg(pt_cfg, cmd_id):
+def _cmd_generic_cfg(pt_cfg: dict[str, object], cmd_id: str) -> object:
     if cmd_id not in pt_cfg:
         pt_cfg[cmd_id] = {
             'plt': {
@@ -85,11 +88,11 @@ def _cmd_generic_cfg(pt_cfg, cmd_id):
     return pt_cfg[cmd_id]
 
 
-def _cmd_generic(fig, ax, t, packet, pt_cfg):
+def _cmd_generic(fig: Figure, ax: Axes, t: int, packet: Packet, pt_cfg: Any) -> None:
     pass
 
 
-def process_packets(fig, ax, packets) -> None:
+def process_packets(fig: Figure, ax: Axes, packets: list[Packet]) -> None:
     first_packet_time = None
     pt_cfg: dict[str, dict[str, Any]] = {}
 
@@ -129,7 +132,7 @@ def die(s: str) -> None:
     sys.exit(1)
 
 
-def main():
+def main() -> None:
     argp = get_arg_parser()
     args = argp.parse_args()
 
@@ -154,7 +157,6 @@ def main():
 
             process_packets(fig, ax, packets)
 
-
         ax.axhline(y=0, color='black', linewidth=2)
         ax.axhline(y=8, color='black', linewidth=1.5)
 
@@ -165,9 +167,6 @@ def main():
         ax.set_xlim(args.start, args.end)
 
         ax.set_title(args.title)
-
-        # Comment out these if using 'set_xlim' above!
-        #ax.set_xticks(np.arange(0, 45, 5))
         ax.set_yticks(np.arange(0, args.pcrs, 1))
 
         ax.grid(True)
