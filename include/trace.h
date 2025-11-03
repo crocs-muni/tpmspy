@@ -10,7 +10,7 @@
 
 #include <stdio.h>
 #define __trace(FMT, ...) \
-	fprintf(stderr, "* %s() " FMT "\n", __func__ __VA_OPT__(,) __VA_ARGS__)
+	fprintf(stderr, "# trace %s() " FMT "\n", __func__ __VA_OPT__(,) __VA_ARGS__)
 
 #endif // NDEBUG
 
