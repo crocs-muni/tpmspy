@@ -5,6 +5,10 @@
 /build/
 /dist/
 
+# Do not store private keys.
+/auto-collect/ssh/
+!/auto-collect/ssh/.gitkeep
+
 # Data directory
 /data/
 

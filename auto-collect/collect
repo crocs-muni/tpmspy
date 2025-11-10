@@ -1,0 +1,111 @@
+#!/bin/sh
+
+# ‹collect› -- Collect a number of samples from a virtual machine.
+#
+# 	collect [-h] [-n] FLAKE N
+#
+# This script collects ‹N› samples by repeating this procedure:
+#   - Start the VM.
+#   - Collect information from the VM (systemd version, tpm2 event log, …).
+#   - Power off the VM
+#   - Collect information from TPM Spy.
+#
+# To avoid corruption or intereference in the first data point, ensure the
+# VM is powered off before running this script.
+#
+# The results are stored as separate directories in the format
+#
+# 	$cfg_traces_dst/$FLAKE/$SEQ_N
+#
+# where ‹$SEQ_N› is a zero-filled numbers from 1 to ‹$N›. For example,
+# N=250 creates directories 000, 001, 002 up to 249.
+#
+# If ‹-n› is specified, existing ‹$SEQ_N› measures are skipped. This can
+# be used to delete corrupted measurements and re-measure missing ones.
+#
+# The ‹FLAKE› argument is used only for storing the results into an appropriate
+# directory. Use ‹switch $FLAKE› script to actually switch a system to a given
+# flake.
+
+script_path=$(readlink -f "$0")
+script_bin=$(dirname "${script_path}")
+script_name=$(basename "${script_path}")
+
+. "$script_bin/config"
+. "$script_bin/common"
+
+
+usage() {
+	echo "usage: $script_name [-n] FLAKE N" >&2
+}
+
+opt_new=
+while getopts "hn" option; do
+	case "${option}" in
+	h)
+		usage
+		exit 0
+		;;
+	n)
+		opt_new=1
+		;;
+	*)
+		usage >&2
+		exit 1
+	esac
+done
+
+shift $((OPTIND - 1))
+
+if [ "$#" -ne 2 ]; then
+	usage >&2
+	exit 1
+fi
+
+flake="$1"
+	
+target_dir="$cfg_traces_dst/$flake"
+mkdir -p "$target_dir"
+
+for trace_no in $(seq -w "$2"); do
+	if [ -d "$target_dir/$trace_no" ]; then
+		if [ -z "$opt_new" ]; then
+			die "Trace $trace_no: Directory exists"
+		fi
+
+		echo "Trace $trace_no: Directory exists, skipping"
+		continue
+	elif ! mkdir "$target_dir/$trace_no"; then
+		die "Trace $trace_no: Failed to create output directory"
+	fi
+
+	host_ip=$(virsh_start "$cfg_machine" "$cfg_hostname")
+	systemd_version=$(run_in_machine "$host_ip" systemctl --version | head -n1| sed 's!systemd \([0-9]\+\).*!systemd-\1!')
+
+	if [ -z "$systemd_version" ]; then
+		die "Trace $trace_no: Cannot retreive systemd version"
+	fi
+
+	_pwd=$(pwd)
+	cd "$target_dir/$trace_no" || die "cd $target_dir/$trace_no"
+	run_in_machine "$host_ip" uname -r >uname.txt
+	run_in_machine "$host_ip" bootctl >bootctl.txt
+	run_in_machine "$host_ip" systemctl --version >systemd.txt
+	run_in_machine "$host_ip" systemd-analyze pcrs >systemd-pcrs.txt
+	run_in_machine "$host_ip" tpm2_eventlog /sys/kernel/security/tpm0/binary_bios_measurements >tpm2-eventlog.txt
+
+	tpmspy_dir=$(find "$cfg_tpmspy_dir" -maxdepth 1 -type d -name 'tpmspy-*' -printf '%T@ %p\n' \
+		| sort -nr | head -n1 | cut -d' ' -f2)
+
+	# Shut down the machine before attempting to copy the captured packets.
+	# TPMSpy will also flush and close the file.
+	virsh_cmd shutdown "$cfg_machine"
+	wait_for virsh_is_shutdown "$cfg_machine"
+
+	cp "$tpmspy_dir"/tpmspy.log tpmspy.log
+	cp "$tpmspy_dir"/swtpm.log swtpm.log
+	cp "$tpmspy_dir"/packets.bin tpmspy.bin
+
+	cd "$_pwd" || die "cd $_pwd"
+	unset _pwd
+done

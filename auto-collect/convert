@@ -1,0 +1,50 @@
+#!/bin/sh
+
+# ‹convert› - Convert captured TPMSpy binary dumps to JSON
+#
+# 	convert [-h]
+#
+# The script takes no arguments. It searches for ‹tpmspy.bin› files in
+# the ‹$cfg_traces_dst› directory and converts them to ‹tpmspy.json›.
+
+script_path=$(readlink -f "$0")
+script_bin=$(dirname "${script_path}")
+script_name=$(basename "${script_path}")
+
+. "$script_bin/config"
+. "$script_bin/common"
+
+
+usage() {
+	echo "usage: $script_name" >&2
+}
+
+while getopts "h" option; do
+	case "${option}" in
+	h)
+		usage
+		exit 0
+		;;
+	*)
+		usage >&2
+		exit 1
+	esac
+done
+
+shift $((OPTIND - 1))
+
+if [ "$#" -ne 0 ]; then
+	usage >&2
+	exit 1
+fi
+
+hostname=$(hostname -s)
+
+find "$cfg_traces_dst" -type f -name 'tpmspy.bin' -printf '%P\n' | while read -r source; do
+	target="${source%.bin}.json"
+
+	if [ ! -f "$cfg_traces_dst/$target" ]; then
+		echo "$source -> $target"
+		"$script_bin/../../build/$hostname/dump" --json "$cfg_traces_dst/$source" >"$cfg_traces_dst/$target"
+	fi
+done

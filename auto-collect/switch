@@ -1,0 +1,67 @@
+#!/bin/sh
+
+# ‹switch› -- Switch the VM to a different configuration
+#
+# 	switch [-h] [-k] FLAKE
+#
+# This script expects a ‹FLAKE› that has been configured and built,
+# possibly with the help of ‹setup› script. It then switches the boot
+# configuration of the system to that ‹FLAKE›.
+#
+# Unless ‹-k› is specified as an option, the script shuts down the VM
+# afterwards.
+
+script_path=$(readlink -f "$0")
+script_bin=$(dirname "${script_path}")
+script_name=$(basename "${script_path}")
+
+. "$script_bin/config"
+. "$script_bin/common"
+
+
+usage() {
+	echo "usage: ${script_name} [-k] FLAKE"
+}
+
+opt_keep=0
+while getopts "hk" option; do
+	case "${option}" in
+	h)
+		usage
+		exit 0
+		;;
+	k)
+		opt_keep=1
+		;;
+	*)
+		usage >&2
+		exit 1
+	esac
+done
+
+shift $((OPTIND - 1))
+
+if [ "$#" -ne "1" ]; then
+	usage >&2
+	exit 1
+fi
+
+flake="$1"
+host_ip=$(virsh_start "$cfg_machine" "$cfg_hostname")
+
+if ! run_in_machine "$host_ip" test -L "${cfg_flakes}/${flake}.result"; then
+	echo "$flake is not built" >&2
+	exit 1
+fi
+
+run_in_machine "$host_ip" <<-SSH
+	nix-env -p /nix/var/nix/profiles/system --set "${cfg_flakes}/${flake}.result"
+	"${cfg_flakes}/${flake}.result/bin/switch-to-configuration" boot
+	"${cfg_flakes}/${flake}.result/sw/bin/bootctl" remove
+	"${cfg_flakes}/${flake}.result/sw/bin/bootctl" install
+	SSH
+
+if [ "$opt_keep" -eq 0 ]; then
+	virsh_cmd shutdown "$cfg_machine" >&2
+	wait_for virsh_is_shutdown "$cfg_machine" >&2
+fi

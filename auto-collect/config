@@ -1,0 +1,45 @@
+#!/bin/false
+
+# QEMU configuration
+# ------------------
+
+# Which session to use:
+#   system: qemu:///system
+#   user:   qemu:///session
+cfg_qemu_session="qemu:///system"
+
+# Name of the VM in VirtManager
+cfg_machine="nixos-systemd"
+
+# Hostname the ‹$cfg_machine› uses internally. It is used by some
+# network-related virsh commands instead of ‹$cfg_machine›.
+cfg_hostname="nixos"
+
+# SSH private key to use to connect to ‹$cfg_machine› as ‹root›.
+cfg_ssh_key="$script_bin/ssh/nixos"
+
+
+# Nix settings
+# ------------
+
+# The directory with ‹flakes.nix› and related configuration inside VM.
+cfg_flakes="/root/flakes"
+
+
+# Traces
+# ------
+
+# DEPRECATED: No longer used?
+#cfg_traces_src="$HOME/virt/mounts/shared"
+
+# The root directory where captured data will be stored. Each datapoint
+# will reside in ‹$cfg_traces_dst/$FLAKE/$N›. See ‹collect› for more details.
+cfg_traces_dst="$HOME/school/tpmspy/probe/data/collect"
+
+# The directory where TPMSpy creates its traces. It should be the same as
+# passed as an argument to the capture plugin, and where ‹tpmspy-*› directories
+# are created.
+cfg_tpmspy_dir="/var/tmp"
+
+# The default number of captures from each flake.
+cfg_default_captures=10

@@ -1,0 +1,75 @@
+#!/bin/sh
+
+# ‹experiment› -- Manage overall workflow of capturing TPMSpy data
+#
+# 	experiment [-h] [-n] [N]
+#
+# This script calls other scripts in this directory to collect data:
+#
+#  1. Get available flakes from the VM (see ‹flakes›).
+#  2. Build configurations for these flakes (see ‹setup›).
+#  3. For each flake:
+#     ◦ Switch to the configuration (see ‹switch›).
+#     ◦ Collect ‹$N› datapoints (see ‹collect›).
+#  4. Convert all ‹tpmspy.bin› to ‹tpmspy.json› (see ‹convert›).
+#
+#  If ‹-n› option is provided, directories for existing flakes are skipped.
+#  This can be used to delete corrupted measurements and re-capture only the
+#  missing ones. This argument is also passed to ‹collect›.
+#
+#  If ‹N› is not specified, ‹$cfg_default_captures› is used instead.
+
+script_path=$(readlink -f "$0")
+script_bin=$(dirname "${script_path}")
+script_name=$(basename "${script_path}")
+
+. "$script_bin/config"
+. "$script_bin/common"
+
+
+usage() {
+	echo "usage: ${script_name} [-n]"
+}
+
+opt_new=
+while getopts "hn" option; do
+	case "${option}" in
+	h)
+		usage
+		exit 0
+		;;
+	n)
+		opt_new=1
+		;;
+	*)
+		usage >&2
+		exit 1
+	esac
+done
+
+shift $((OPTIND - 1))
+
+if [ "$#" -gt 1 ]; then
+	usage >&2
+	exit 1
+fi
+
+count="${1:-$cfg_default_captures}"
+flakes=$("$script_bin"/flakes -k)
+
+"$script_bin/setup" -k $flakes
+
+for flake in $flakes; do
+	# Commented out: We need to reinspect all captures, we cannot skip
+	# existing flake directories just like that.
+	#if [ -d "$cfg_traces_dst/$flake" ] && [ "$opt_new" -eq 1 ]; then
+	#	printf "\x1b[38m # \x1b[0m \x1b[1m%s\x1b[0m\n" "$flake"
+	#	continue
+	#fi
+
+	printf "\x1b[33m * \x1b[0m \x1b[1m%s\x1b[0m\n" "$flake"
+	"$script_bin/switch" "$flake"
+	"$script_bin/collect" ${opt_new:+-n} "$flake" "$count"
+done
+
+"$script_bin/convert"

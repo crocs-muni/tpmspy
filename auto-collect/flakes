@@ -1,0 +1,56 @@
+#!/bin/sh
+
+# ‹flakes› -- Get a list of available flakes from a VM.
+#
+# 	flakes [-h] [-k]
+#
+# This script starts up a VM and prints a list of flakes available.
+#
+# Unless ‹-k› is specified as an option, the script shuts down the VM
+# afterwards.
+
+script_path=$(readlink -f "$0")
+script_bin=$(dirname "${script_path}")
+script_name=$(basename "${script_path}")
+
+. "$script_bin/config"
+. "$script_bin/common"
+
+
+usage() {
+	echo "usage: ${script_name} [-k]"
+}
+
+opt_keep=0
+while getopts "hk" option; do
+	case "${option}" in
+	h)
+		usage
+		exit 0
+		;;
+	k)
+		opt_keep=1
+		;;
+	*)
+		usage >&2
+		exit 1
+	esac
+done
+
+shift $((OPTIND - 1))
+
+if [ "$#" -ne 0 ]; then
+	usage >&2
+	exit 1
+fi
+
+host_ip=$(virsh_start "$cfg_machine" "$cfg_hostname") >&2
+
+run_in_machine "$host_ip" nix flake metadata "$cfg_flakes" --json \
+	| jq -r '.locks.nodes.root.inputs |keys |.[]' \
+	| sed 's/^nixpkgs-//'
+
+if [ "$opt_keep" -eq 0 ]; then
+	virsh_cmd shutdown "$cfg_machine" >&2
+	wait_for virsh_is_shutdown "$cfg_machine" >&2
+fi
