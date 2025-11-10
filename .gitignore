@@ -15,5 +15,6 @@
 # Compile commands
 compile_commands.json
 
-# Cache
+# Caches
 /.cache/
+__pycache__
