@@ -14,6 +14,7 @@ from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from typing import Any
 from typing import Generator as RawGenerator
+from typing import reveal_type
 from typing import TypeAlias
 from typing import TypeVar
 
@@ -61,16 +62,16 @@ def _pcr_extend(fig: Figure, ax: Axes, t: int, packet: Packet) -> None:
             label='PCR_Extend(' + str(pcr) + ')')
 
 
-def _flatten(outer: [[any]]) -> [any]:
+def _flatten(outer: list[list[Any]]) -> list[Any]:
     return [item for inner in outer for item in inner]
 
 
-def _unique(lst: [any]) -> [any]:
+def _unique(lst: list[Any]) -> list[Any]:
     return list(set(lst))
 
 
 def _pcr_read(fig: Figure, ax: Axes, t: int, packet: Packet) -> None:
-    pcr_selections = map(lambda s: s.get("pcr-index", []), packet.get("attr", {}).get("selections", []))
+    pcr_selections = list(map(lambda s: s.get("pcr-index", []), packet.get("attr", {}).get("selections", [])))
     pcrs = _unique(_flatten(pcr_selections))
 
     if pcrs == []:

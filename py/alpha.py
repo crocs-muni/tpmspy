@@ -62,11 +62,11 @@ def _pcr_extend(fig: Figure, ax: Axes, t: int, packet: Packet) -> None:
             label='PCR_Extend(' + str(pcr) + ')')
 
 
-def _flatten(outer: [[any]]) -> [any]:
+def _flatten(outer: list[list[Any]]) -> list[Any]:
     return [item for inner in outer for item in inner]
 
 
-def _unique(lst: [any]) -> [any]:
+def _unique(lst: list[Any]) -> list[Any]:
     return list(set(lst))
 
 
