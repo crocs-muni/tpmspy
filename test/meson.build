@@ -10,4 +10,4 @@ test_bin = executable(
     link_with: [tpmspy_lib],
 )
 
-test('tpmspy tests', tpmspy_test)
+test('tpmspy tests', test_bin)
