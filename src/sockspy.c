@@ -318,6 +318,12 @@ int _socket_spawn_link(struct context *ctx, int src_new_fd,
 	if (!_socket_spawn_conn(ctx, &sock_src_new, &src_new, &sock_dst_new, &dst_new))
 		goto err_close_other;
 
+	src_new->sink_ctx = sinks_dup(parent[0]->sink_ctx);
+	dst_new->sink_ctx = sinks_dup(parent[1]->sink_ctx);
+
+	/* Sanity check: The above should have the same context. */
+	assert(src_new->sink_ctx == dst_new->sink_ctx);
+
 	/* OK, pass the new dst_new_fd[1] out. */
 	if (link != nullptr) {
 		link[0] = src_new;
