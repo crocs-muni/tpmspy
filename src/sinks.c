@@ -101,11 +101,18 @@ bool _sinks_load_lib(struct sinks *sinks, size_t i, char *name)
 	if ((sym->dlobj = dlopen(path, RTLD_NOW | RTLD_LOCAL)) == nullptr)
 		warnx_jmp(free_args, "%s", dlerror());
 
+/* Conversion of ‹void*› to a function pointer is okay as long as the pointer
+ * really points to such a function. */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+
 	if ((sym->send = (sink_send_f) dlsym(sym->dlobj, "sink_send")) == nullptr)
 		warnx_jmp(free_dlobj, "%s", dlerror());
 
 	sym->open = (sink_open_f) dlsym(sym->dlobj, "sink_open");
 	sym->close = (sink_close_f) dlsym(sym->dlobj, "sink_close");
+
+#pragma GCC diagnostic pop
 
 	if (sym->open != nullptr && sym->close == nullptr)
 		warnx_jmp(free_dlobj, "%s: sink_open() provided without sink_close()", name);
