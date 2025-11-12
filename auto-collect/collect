@@ -17,7 +17,7 @@
 #
 # 	$cfg_traces_dst/$FLAKE/$SEQ_N
 #
-# where ‹$SEQ_N› is a zero-filled numbers from 1 to ‹$N›. For example,
+# where ‹$SEQ_N› is a zero-filled numbers from 0 to ‹$N -1›. For example,
 # N=250 creates directories 000, 001, 002 up to 249.
 #
 # If ‹-n› is specified, existing ‹$SEQ_N› measures are skipped. This can
@@ -63,11 +63,12 @@ if [ "$#" -ne 2 ]; then
 fi
 
 flake="$1"
+count="$2"
 	
 target_dir="$cfg_traces_dst/$flake"
 mkdir -p "$target_dir"
 
-for trace_no in $(seq -w "$2"); do
+for trace_no in $(seq -w 0 "$((count - 1))"); do
 	if [ -d "$target_dir/$trace_no" ]; then
 		if [ -z "$opt_new" ]; then
 			die "Trace $trace_no: Directory exists"
