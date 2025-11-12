@@ -131,12 +131,14 @@ const struct conntrack_entry *conntrack_find(const struct conntrack *ct,
 {
 	assert(ct != nullptr);
 
-	if (prev == nullptr)
-		prev = &ct->entries[-1];
-	else
+	if (prev == nullptr) {
+		prev = &ct->entries[0];
+	} else {
 		assert_entry_in_array(ct, prev);
+		prev++;
+	}
 
-	for (const struct conntrack_entry *cursor = prev + 1;
+	for (const struct conntrack_entry *cursor = prev;
 			cursor < &ct->entries[ct->size];
 			cursor++) {
 		if (cursor->a == fd || cursor->b == fd)
