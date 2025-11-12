@@ -214,7 +214,9 @@ private no_return
 void _start_swtpm_exec(const char *data_dir, char *argv[])
 {
 	char log_file[PATH_MAX];
-	snprintf(log_file, sizeof(log_file), "%s/%s", data_dir, "swtpm.log");
+	if (snprintf(log_file, sizeof(log_file), "%s/%s", data_dir, "swtpm.log") >= (int) sizeof(log_file))
+		croak("Log file path too long");
+
 	int log_fd = creat_excl(log_file, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 
 	if (log_fd == -1)
@@ -325,7 +327,6 @@ pid_t start_swtpm(int /*argc*/, char *argv[], const char *data_dir, const char *
 		warn_jmp(cleanup_kill, "Cannot start swtpm: pidfd_open()");
 
 	status = _start_swtpm_await_socket(inofd, pidfd, sock_name);
-
 	close(pidfd);
 
 cleanup_kill:
@@ -345,14 +346,15 @@ cleanup_sock_name:
 private no_return
 void _start_tpmspy_exec(const char *data_dir, const char *swtpm_sock, const char *qemu_sock)
 {
-	char dump_file[PATH_MAX], log_file[PATH_MAX];
-	snprintf(dump_file, sizeof(dump_file), "%s/packets.bin", data_dir);
-	int dump_fd = creat_excl(dump_file, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+	char log_file[PATH_MAX];
 
-	if (dump_fd == -1)
-		croak("Cannot exec tpmspy: open(%s)", dump_file);
+	char *capture_arg = nullptr;
+	if (asprintf(&capture_arg, "capture:%s/packets-%%02x.bin", data_dir) == -1)
+		croak("asprintf()");
 
-	snprintf(log_file, sizeof(log_file), "%s/tpmspy.log", data_dir);
+	if (snprintf(log_file, sizeof(log_file), "%s/tpmspy.log", data_dir) >= (int) sizeof(log_file))
+		croak("TPMSpy log path too long");
+
 	int log_fd = creat_excl(log_file, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 
 	if (log_fd == -1)
@@ -369,13 +371,12 @@ void _start_tpmspy_exec(const char *data_dir, const char *swtpm_sock, const char
 
 	char *args[] = {
 		(char *) TPMSPY_BIN,
-		"--dump-file", dump_file,
+		"--sink", capture_arg,
 		(char *) swtpm_sock,
 		(char *) qemu_sock,
 		nullptr,
 	};
 
-	close(dump_fd);
 	close(log_fd);
 
 	execv(TPMSPY_BIN, args);
