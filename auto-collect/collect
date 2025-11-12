@@ -105,7 +105,13 @@ for trace_no in $(seq -w 0 "$((count - 1))"); do
 
 	cp "$tpmspy_dir"/tpmspy.log tpmspy.log
 	cp "$tpmspy_dir"/swtpm.log swtpm.log
-	cp "$tpmspy_dir"/packets.bin tpmspy.bin
+
+	if [ $(ls "$tpmspy_dir"/packets-*.bin | wc -l) -ne 1 ]; then
+		echo "collect: Unique packets-01.bin not found, copying all to be sure" >&2
+		cp "$tpmspy_dir"/packets-*.bin .
+	else
+		cp "$tpmspy_dir"/packets-*.bin tpmspy.bin
+	fi
 
 	cd "$_pwd" || die "cd $_pwd"
 	unset _pwd
