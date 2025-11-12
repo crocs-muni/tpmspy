@@ -4,7 +4,6 @@ project('tpmspy', ['c', 'cpp'], meson_version: '>=1.2',
         'cpp_std=c++23',
         'warning_level=3',
         'buildtype=debug',
-        'install_dir=dist',
     ]
 )
 
