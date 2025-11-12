@@ -3,7 +3,6 @@ dump_srcs = files(
     'options.c',
     'dump.c',
     'fdcache.c',
-    'tpm_buf.c',
     'jsonv.c',
 )
 
