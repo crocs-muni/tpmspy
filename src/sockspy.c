@@ -411,8 +411,6 @@ ssize_t _socket_recv(struct context *ctx, struct socket_watcher *src, struct soc
 		if (new_fd[1] != -1)
 			close(new_fd[1]);
 
-		// struct socket_watcher *link[] = { src, dst };
-		// tpm_capture_write(link, &stamp, new_link, &msg.msg_iov[0]);
 		sinks_dispatch(ctx->sinks, src->sink_ctx, &(struct sink_message){
 			.stamp = &stamp,
 			.link = { src, dst },
