@@ -106,7 +106,7 @@ bool _tpm_capture_pattern_is_valid(const char *str)
 			while (isdigit(*str) || *str == '.')
 				str++;
 
-			if (*str++ != 'z' && *str++ != 'd')
+			if (strchr("zdx", *str++) == nullptr)
 				return false;
 
 			counter++;
