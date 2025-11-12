@@ -62,5 +62,10 @@ find "$cfg_traces_dst" -type f -name 'tpmspy.bin' -printf '%P\n' | while read -r
 	if [ ! -f "$cfg_traces_dst/$target" ]; then
 		echo "$source -> $target"
 		"$dump_bin" --json "$cfg_traces_dst/$source" >"$cfg_traces_dst/$target"
+
+		if [ -f "$cfg_traces_dst/$target" ] && ! [ -s "$cfg_traces_dst/$target" ]; then
+			echo "$cfg_traces_dst/$target: File is empty" >&2
+			unlink "$cfg_traces_dst/$target"
+		fi
 	fi
 done
