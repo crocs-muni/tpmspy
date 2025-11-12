@@ -9,7 +9,7 @@
 cfg_qemu_session="qemu:///system"
 
 # Name of the VM in VirtManager
-cfg_machine="nixos-systemd"
+cfg_machine="nixos-systemd.vm"
 
 # Hostname the ‹$cfg_machine› uses internally. It is used by some
 # network-related virsh commands instead of ‹$cfg_machine›.
