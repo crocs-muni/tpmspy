@@ -44,11 +44,15 @@ cmd() {
 }
 
 opt_new=
-while getopts "hn" option; do
+opt_bel=1
+while getopts "hnq" option; do
 	case "${option}" in
 	h)
 		usage
 		exit 0
+		;;
+	q)
+		opt_bel=0
 		;;
 	n)
 		opt_new=1
