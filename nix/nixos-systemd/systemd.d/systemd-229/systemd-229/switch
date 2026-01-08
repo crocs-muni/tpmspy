@@ -1,0 +1,72 @@
+#/bin/sh -e
+
+script_path=$(readlink -f "$0")
+script_bin=$(dirname "${script_path}")
+script_name=$(basename "${script_path}")
+
+objname() {
+	basename "$(dirname $(readlink -f $1))"
+}
+
+flake=$(echo "$script_path" | grep -Eo 'systemd-[0-9]+')
+id=$(($(ls /efi/loader/entries | wc -l) + 1))
+
+# Sanity checks
+
+if test -z "$flake"; then
+	echo "$script_path: Cannot determine flake name"
+	exit 1
+fi
+
+if test -z "$id"; then
+	echo "$script_path: Cannot determine generation id" >&2
+	exit 1
+fi
+
+if test -e "/nix/var/nix/profiles/system-$id-link"; then
+	echo "system-$id-link already exists" >&2
+	exit 1
+fi
+
+if test -e "/efi/loader/entries/nixos-generation-$id.conf"; then
+	echo "nixos-generation-$id.conf already exists" >&2
+	exit 1
+fi
+
+if ! [ -e "$script_bin/../../r/$flake" ]; then
+	echo "r/$flake: Build result not found" >&2
+	exit 1
+fi
+
+store_path=$(readlink -f "$script_bin/../../r/$flake")
+cd "$script_bin/../../r/$flake"
+
+echo "Copying kernel and initramfs"
+mkdir -p /boot/kernels
+
+kernel_name="$(objname kernel)"
+cp kernel /boot/kernels/"$kernel_name.efi"
+
+initrd_name="$(objname initrd)"
+cp initrd /boot/kernels/"$initrd_name.efi"
+
+echo "Creating bootloader entry"
+
+cat >"/efi/loader/entries/nixos-generation-$id.conf" <<EOF
+title NixOS
+version Generation $id NixOS $(cat nixos-version), Linux Kernel $(echo $kernel_name | grep -Eo '[0-9]\.[0-9.]+')
+linux /efi/nixos/kernels/$kernel_name.efi
+initrd /efi/nixos/kernels/$initrd_name.efi
+options systemConfig=$store_path init=$store_path/init loglevel=4
+machine-id $(cat /etc/machine-id)
+EOF
+
+echo "Creating generation entry"
+ln -s "$store_path" "/nix/var/nix/profiles/system-$id-link"
+
+nix-env -p /nix/var/nix/profiles/system --set "system-$id-link"
+
+echo "Configuring bootctl"
+/run/current-system/sw/bin/bootctl remove
+sw/bin/bootctl install
+sw/bin/bootctl set-default "nixos-generation-$id.conf"

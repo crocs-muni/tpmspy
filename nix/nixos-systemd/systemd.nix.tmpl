@@ -1,0 +1,50 @@
+{
+  inputs = {
+    : for $config -> $item {
+    nixpkgs-systemd-<: $item.version :> = {
+    :   if $item.mode == "flake" {
+      url = "github:NixOS/nixpkgs/<: $item.commit :>";
+    :   } else {
+      url = "https://github.com/NixOS/nixpkgs/archive/<: $item.commit :>.tar.gz";
+      flake = false;
+    :   }
+    };
+    : }
+  };
+
+  outputs = {
+      self,
+      : for $config -> $item {
+      nixpkgs-systemd-<: $item.version :>,
+      : }
+      ...
+  } : {
+    : for $config -> $item {
+    :   if $item.mode == 'flake' {
+    nixosConfigurations.systemd-<: $item.version :> = nixpkgs-systemd-<: $item.version :>.lib.nixosSystem {
+      system = "x86_64-linux";
+      modules = [
+        ./cfg/systemd-<: $item.version :>/configuration.nix
+        { systemd.package = nixpkgs-systemd-<: $item.version :>.legacyPackages.x86_64-linux.systemd; }
+      ];
+    };
+    :   } else {
+    nixosConfigurations.systemd-<: $item.version :> = import "${nixpkgs-systemd-<: $item.version :>}/nixos" {
+      system = "x86_64-linux";
+      configuration = {
+        imports = [ ./cfg/systemd-<: $item.version :>/configuration.nix ];
+        nixpkgs.config = {
+          doCheck = false;
+          packageOverrides = pkgs: {
+            bash-completion = pkgs.bash-completion.overrideAttrs (_: {
+              doCheck = false;
+              checkPhase = "true";
+            });
+          };
+        };
+      };
+    };
+    :   }
+    : }
+  };
+}
