@@ -9,8 +9,9 @@
 #  1. Get available flakes from the VM (see ‹flakes›).
 #  2. Build configurations for these flakes (see ‹setup›).
 #  3. For each flake:
-#     ◦ Switch to the configuration (see ‹switch›).
-#     ◦ Collect ‹$N› datapoints (see ‹collect›).
+#     │ ◦ Switch to the configuration (see ‹switch›).
+#     │ ◦ Collect ‹$N› datapoints (see ‹collect›).
+#     └ ◦ Restore and boot to the default system (see ‹restore›).
 #  4. Convert all ‹tpmspy.bin› to ‹tpmspy.json› (see ‹convert›).
 #
 # If ‹N› is not specified, ‹$cfg_default_captures› is used instead.
@@ -71,7 +72,8 @@ traces_dst="${cfg_traces_dst}"
 printf "\x1b[96m ** \x1b[0m \x1b[1m%s\x1b[0m\n" "Setting up flakes"
 flakes=$("$script_bin"/flakes -k)
 
-"$script_bin/setup" -k $flakes
+cmd "$script_bin/setup" -k $flakes
+cmd "$script_bin/restore" -s
 
 for flake in $flakes; do
 	printf "\x1b[33m ~> \x1b[0m Switch \x1b[1m%s\x1b[0m\n" "$flake"

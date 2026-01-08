@@ -1,0 +1,92 @@
+#!/bin/sh
+
+# ‹restore› -- Set or restore a profile.
+#
+# 	restore [-h] [-s] [-k]
+#
+# When ‹-s› option is set, the current system is stored as system-default
+# in the nix profiles. Otherwise, system-default profile is switched to and
+# the machine is powered off unless ‹-k› is specified.
+
+script_path=$(readlink -f "$0")
+script_bin=$(dirname "${script_path}")
+script_name=$(basename "${script_path}")
+
+. "$script_bin/common"
+
+
+usage() {
+	echo "usage: $script_name [-h] [-s] [-k]" >&2
+}
+
+opt_set=0
+opt_keep=0
+
+while getopts "hsk" option; do
+	case "${option}" in
+	h)
+		usage
+		exit 0
+		;;
+
+	s)
+		opt_set=1
+		;;
+	k)
+		opt_keep=1
+		;;
+	*)
+		usage >&2
+		exit 1
+	esac
+done
+
+shift $((OPTIND - 1))
+
+if [ "$#" -ne 0 ]; then
+	usage >&2
+	exit 1
+fi
+
+host_ip=$(virsh_start "$cfg_machine" "$cfg_hostname")
+if [ "$opt_set" -eq 1 ]; then
+	if run_in_machine "$host_ip" test -L "/nix/var/nix/profiles/system-default"; then
+		echo "system-default is set"
+		exit 0
+	fi
+
+	if ! run_in_machine "$host_ip" cp -P "/run/current-system" "/nix/var/nix/profiles/system-default"; then
+		echo "Failed to create system-default profile"
+		exit 1
+	fi
+
+	echo "Created system-default profile"
+	exit 0
+fi
+
+run_in_machine "$host_ip" <<-SSH
+	rm -f /efi/loader/entries/*.conf
+	rm -f /nix/var/nix/profiles/system-*-link
+
+	if ! nix-env -p /nix/var/nix/profiles/system --set "\$(readlink -f /nix/var/nix/profiles/system-default)"; then
+		echo "Trying to restore NixOS version using hacks"
+		if ! ln -s "\$(readlink -f /nix/var/nix/profiles/system-default)" /nix/var/nix/profiles/system-1-link \
+				|| ! ln -s system-1-link /nix/var/nix/profiles/system; then
+			exit 1
+		fi
+	fi
+
+	"/run/current-system/sw/bin/bootctl" remove
+	"/nix/var/nix/profiles/system-default/sw/bin/bootctl" install
+	"/nix/var/nix/profiles/system-default/bin/switch-to-configuration" boot
+	SSH
+
+if [ "$?" -ne 0 ]; then
+	echo "Failed to restore systemd-boot"
+	exit 1
+fi
+
+if [ "$opt_keep" -eq 0 ]; then
+	virsh_cmd shutdown "$cfg_machine" >&2
+	wait_for virsh_is_shutdown "$cfg_machine" >&2
+fi
