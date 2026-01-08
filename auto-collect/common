@@ -59,3 +59,10 @@ run_in_machine() {
 
 	ssh -i "$cfg_ssh_key" root@"$host_ip" -- "$@"
 }
+
+if [ -z "$COLLECT_CONFIG" ] && [ ! -f "$script_bin/default.cfg" ]; then
+	die "COLLECT_CONFIG: Variable not set and default.cfg does not exist"
+fi
+
+echo "$0: Using configuration ${COLLECT_CONFIG:-default.cfg}" >&2
+. "$script_bin/${COLLECT_CONFIG:-default.cfg}"
