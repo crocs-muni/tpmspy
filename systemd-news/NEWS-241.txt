@@ -1,0 +1,106 @@
+CHANGES WITH 241:
+
+        * The default locale can now be configured at compile time. Otherwise,
+          a suitable default will be selected automatically (one of C.UTF-8,
+          en_US.UTF-8, and C).
+
+        * The version string shown by systemd and other tools now includes the
+          git commit hash when built from git. An override may be specified
+          during compilation, which is intended to be used by distributions to
+          include the package release information.
+
+        * systemd-cat can now filter standard input and standard error streams
+          for different syslog priorities using the new --stderr-priority=
+          option.
+
+        * systemd-journald and systemd-journal-remote reject entries which
+          contain too many fields (CVE-2018-16865) and set limits on the
+          process' command line length (CVE-2018-16864).
+
+        * $DBUS_SESSION_BUS_ADDRESS environment variable is set by pam_systemd
+          again.
+
+        * A new network device NamePolicy "keep" is implemented for link files,
+          and used by default in 99-default.link (the fallback configuration
+          provided by systemd). With this policy, if the network device name
+          was already set by userspace, the device will not be renamed again.
+          This matches the naming scheme that was implemented before
+          systemd-240. If naming-scheme < 240 is specified, the "keep" policy
+          is also enabled by default, even if not specified. Effectively, this
+          means that if naming-scheme >= 240 is specified, network devices will
+          be renamed according to the configuration, even if they have been
+          renamed already, if "keep" is not specified as the naming policy in
+          the .link file. The 99-default.link file provided by systemd includes
+          "keep" for backwards compatibility, but it is recommended for user
+          installed .link files to *not* include it.
+
+          The "kernel" policy, which keeps kernel names declared to be
+          "persistent", now works again as documented.
+
+        * kernel-install script now optionally takes the paths to one or more
+          initrd files, and passes them to all plugins.
+
+        * The mincore() system call has been dropped from the @system-service
+          system call filter group, as it is pretty exotic and may potentially
+          used for side-channel attacks.
+
+        * -fPIE is dropped from compiler and linker options. Please specify
+          -Db_pie=true option to meson to build position-independent
+          executables. Note that the meson option is supported since meson-0.49.
+
+        * The fs.protected_regular and fs.protected_fifos sysctls, which were
+          added in Linux 4.19 to make some data spoofing attacks harder, are
+          now enabled by default. While this will hopefully improve the
+          security of most installations, it is technically a backwards
+          incompatible change; to disable these sysctls again, place the
+          following lines in /etc/sysctl.d/60-protected.conf or a similar file:
+
+              fs.protected_regular = 0
+              fs.protected_fifos = 0
+
+          Note that the similar hardlink and symlink protection has been
+          enabled since v199, and may be disabled likewise.
+
+        * The files read from the EnvironmentFile= setting in unit files now
+          parse backslashes inside quotes literally, matching the behaviour of
+          POSIX shells.
+
+        * udevadm trigger, udevadm control, udevadm settle and udevadm monitor
+          now automatically become NOPs when run in a chroot() environment.
+
+        * The tmpfiles.d/ "C" line type will now copy directory trees not only
+          when the destination is so far missing, but also if it already exists
+          as a directory and is empty. This is useful to cater for systems
+          where directory trees are put together from multiple separate mount
+          points but otherwise empty.
+
+        * A new function sd_bus_close_unref() (and the associated
+          sd_bus_close_unrefp()) has been added to libsystemd, that combines
+          sd_bus_close() and sd_bus_unref() in one.
+
+        * udevadm control learnt a new option for --ping for testing whether a
+          systemd-udevd instance is running and reacting.
+
+        * udevadm trigger learnt a new option for --wait-daemon for waiting
+          systemd-udevd daemon to be initialized.
+
+        Contributions from: Aaron Plattner, Alberts Muktupāvels, Alex Mayer,
+        Ayman Bagabas, Beniamino Galvani, Burt P, Chris Down, Chris Lamb, Chris
+        Morin, Christian Hesse, Claudius Ellsel, dana, Daniel Axtens, Daniele
+        Medri, Dave Reisner, David Santamaría Rogado, Diego Canuhe, Dimitri
+        John Ledkov, Evgeny Vereshchagin, Fabrice Fontaine, Filipe
+        Brandenburger, Franck Bui, Frantisek Sumsal, govwin, Hans de Goede,
+        James Hilliard, Jan Engelhardt, Jani Uusitalo, Jan Janssen, Jan
+        Synacek, Jonathan McDowell, Jonathan Roemer, Jonathon Kowalski, Joost
+        Heitbrink, Jörg Thalheim, Lance, Lennart Poettering, Louis Taylor,
+        Lucas Werkmeister, Mantas Mikulėnas, Marc-Antoine Perennou,
+        marvelousblack, Michael Biebl, Michael Sloan, Michal Sekletar, Mike
+        Auty, Mike Gilbert, Mikhail Kasimov, Neil Brown, Niklas Hambüchen,
+        Patrick Williams, Paul Seyfert, Peter Hutterer, Philip Withnall, Roger
+        James, Ronnie P. Thomas, Ryan Gonzalez, Sam Morris, Stephan Edel,
+        Stephan Gerhold, Susant Sahani, Taro Yamada, Thomas Haller, Topi
+        Miettinen, YiFei Zhu, YmrDtnJu, YunQiang Su, Yu Watanabe, Zbigniew
+        Jędrzejewski-Szmek, zsergeant77, Дамјан Георгиевски
+
+        — Berlin, 2019-02-14
+

@@ -1,0 +1,72 @@
+CHANGES WITH 225:
+
+        * machinectl gained a new verb 'shell' which opens a fresh
+          shell on the target container or the host. It is similar to
+          the existing 'login' command of machinectl, but spawns the
+          shell directly without prompting for username or
+          password. The pseudo machine '.host' now refers to the local
+          host and is used by default. Hence, 'machinectl shell' can
+          be used as replacement for 'su -' which spawns a session as
+          a fresh systemd unit in a way that is fully isolated from
+          the originating session.
+
+        * systemd-networkd learned to cope with private-zone DHCP
+          options and allows other programs to query the values.
+
+        * SELinux access control when enabling/disabling units is no
+          longer enforced with this release. The previous implementation
+          was incorrect, and a new corrected implementation is not yet
+          available. As unit file operations are still protected via
+          polkit and D-Bus policy this is not a security problem. Yet,
+          distributions which care about optimal SELinux support should
+          probably not stabilize on this release.
+
+        * sd-bus gained support for matches of type "arg0has=", that
+          test for membership of strings in string arrays sent in bus
+          messages.
+
+        * systemd-resolved now dumps the contents of its DNS and LLMNR
+          caches to the logs on reception of the SIGUSR1 signal. This
+          is useful to debug DNS behaviour.
+
+        * The coredumpctl tool gained a new --directory= option to
+          operate on journal files in a specific directory.
+
+        * "systemctl reboot" and related commands gained a new
+          "--message=" option which may be used to set a free-text
+          wall message when shutting down or rebooting the
+          system. This message is also logged, which is useful for
+          figuring out the reason for a reboot or shutdown a
+          posteriori.
+
+        * The "systemd-resolve-host" tool's -i switch now takes
+          network interface numbers as alternative to interface names.
+
+        * A new unit file setting for services has been introduced:
+          UtmpMode= allows configuration of how precisely systemd
+          handles utmp and wtmp entries for the service if this is
+          enabled. This allows writing services that appear similar to
+          user sessions in the output of the "w", "who", "last" and
+          "lastlog" tools.
+
+        * systemd-resolved will now locally synthesize DNS resource
+          records for the "localhost" and "gateway" domains as well as
+          the local hostname. This should ensure that clients querying
+          RRs via resolved will get similar results as those going via
+          NSS, if nss-myhostname is enabled.
+
+        Contributions from: Alastair Hughes, Alex Crawford, Daniel
+        Mack, David Herrmann, Dimitri John Ledkov, Eric Kostrowski,
+        Evgeny Vereshchagin, Felipe Sateler, HATAYAMA Daisuke, Jan
+        Pokorný, Jan Synacek, Johnny Robeson, Karel Zak, Kay Sievers,
+        Kefeng Wang, Lennart Poettering, Major Hayden, Marcel
+        Holtmann, Markus Elfring, Martin Mikkelsen, Martin Pitt, Matt
+        Turner, Maxim Mikityanskiy, Michael Biebl, Namhyung Kim,
+        Nicolas Cornu, Owen W. Taylor, Patrik Flykt, Peter Hutterer,
+        reverendhomer, Richard Maw, Ronny Chevalier, Seth Jennings,
+        Stef Walter, Susant Sahani, Thomas Blume, Thomas Hindoe
+        Paaboel Andersen, Thomas Meyer, Tom Gundersen, Vincent Batts,
+        WaLyong Cho, Zbigniew Jędrzejewski-Szmek
+
+        — Berlin, 2015-08-27
+

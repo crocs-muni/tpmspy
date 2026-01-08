@@ -1,0 +1,201 @@
+CHANGES WITH 228:
+
+        * A number of properties previously only settable in unit
+          files are now also available as properties to set when
+          creating transient units programmatically via the bus, as it
+          is exposed with systemd-run's --property=
+          setting. Specifically, these are: SyslogIdentifier=,
+          SyslogLevelPrefix=, TimerSlackNSec=, OOMScoreAdjust=,
+          EnvironmentFile=, ReadWriteDirectories=,
+          ReadOnlyDirectories=, InaccessibleDirectories=,
+          ProtectSystem=, ProtectHome=, RuntimeDirectory=.
+
+        * When creating transient services via the bus API it is now
+          possible to pass in a set of file descriptors to use as
+          STDIN/STDOUT/STDERR for the invoked process.
+
+        * Slice units may now be created transiently via the bus APIs,
+          similar to the way service and scope units may already be
+          created transiently.
+
+        * Wherever systemd expects a calendar timestamp specification
+          (like in journalctl's --since= and --until= switches) UTC
+          timestamps are now supported. Timestamps suffixed with "UTC"
+          are now considered to be in Universal Time Coordinated
+          instead of the local timezone. Also, timestamps may now
+          optionally be specified with sub-second accuracy. Both of
+          these additions also apply to recurring calendar event
+          specification, such as OnCalendar= in timer units.
+
+        * journalctl gained a new "--sync" switch that asks the
+          journal daemon to write all so far unwritten log messages to
+          disk and sync the files, before returning.
+
+        * systemd-tmpfiles learned two new line types "q" and "Q" that
+          operate like "v", but also set up a basic btrfs quota
+          hierarchy when used on a btrfs file system with quota
+          enabled.
+
+        * tmpfiles' "v", "q" and "Q" will now create a plain directory
+          instead of a subvolume (even on a btrfs file system) if the
+          root directory is a plain directory, and not a
+          subvolume. This should simplify things with certain chroot()
+          environments which are not aware of the concept of btrfs
+          subvolumes.
+
+        * systemd-detect-virt gained a new --chroot switch to detect
+          whether execution takes place in a chroot() environment.
+
+        * CPUAffinity= now takes CPU index ranges in addition to
+          individual indexes.
+
+        * The various memory-related resource limit settings (such as
+          LimitAS=) now understand the usual K, M, G, … suffixes to
+          the base of 1024 (IEC). Similar, the time-related resource
+          limit settings understand the usual min, h, day, … suffixes
+          now.
+
+        * There's a new system.conf setting DefaultTasksMax= to
+          control the default TasksMax= setting for services and
+          scopes running on the system. (TasksMax= is the primary
+          setting that exposes the "pids" cgroup controller on systemd
+          and was introduced in the previous systemd release.) The
+          setting now defaults to 512, which means services that are
+          not explicitly configured otherwise will only be able to
+          create 512 processes or threads at maximum, from this
+          version on. Note that this means that thread- or
+          process-heavy services might need to be reconfigured to set
+          TasksMax= to a higher value. It is sufficient to set
+          TasksMax= in these specific unit files to a higher value, or
+          even "infinity". Similar, there's now a logind.conf setting
+          UserTasksMax= that defaults to 4096 and limits the total
+          number of processes or tasks each user may own
+          concurrently. nspawn containers also have the TasksMax=
+          value set by default now, to 8192. Note that all of this
+          only has an effect if the "pids" cgroup controller is
+          enabled in the kernel. The general benefit of these changes
+          should be a more robust and safer system, that provides a
+          certain amount of per-service fork() bomb protection.
+
+        * systemd-nspawn gained the new --network-veth-extra= switch
+          to define additional and arbitrarily-named virtual Ethernet
+          links between the host and the container.
+
+        * A new service execution setting PassEnvironment= has been
+          added that allows importing select environment variables
+          from PID1's environment block into the environment block of
+          the service.
+
+        * Timer units gained support for a new RemainAfterElapse=
+          setting which takes a boolean argument. It defaults to on,
+          exposing behaviour unchanged to previous releases. If set to
+          off, timer units are unloaded after they elapsed if they
+          cannot elapse again. This is particularly useful for
+          transient timer units, which shall not stay around longer
+          than until they first elapse.
+
+        * systemd will now bump the net.unix.max_dgram_qlen to 512 by
+          default now (the kernel default is 16). This is beneficial
+          for avoiding blocking on AF_UNIX/SOCK_DGRAM sockets since it
+          allows substantially larger numbers of queued
+          datagrams. This should increase the capability of systemd to
+          parallelize boot-up, as logging and sd_notify() are unlikely
+          to stall execution anymore. If you need to change the value
+          from the new defaults, use the usual sysctl.d/ snippets.
+
+        * The compression framing format used by the journal or
+          coredump processing has changed to be in line with what the
+          official LZ4 tools generate. LZ4 compression support in
+          systemd was considered unsupported previously, as the format
+          was not compatible with the normal tools. With this release
+          this has changed now, and it is hence safe for downstream
+          distributions to turn it on. While not compressing as well
+          as the XZ, LZ4 is substantially faster, which makes
+          it a good default choice for the compression logic in the
+          journal and in coredump handling.
+
+        * Any reference to /etc/mtab has been dropped from
+          systemd. The file has been obsolete since a while, but
+          systemd refused to work on systems where it was incorrectly
+          set up (it should be a symlink or non-existent). Please make
+          sure to update to util-linux 2.27.1 or newer in conjunction
+          with this systemd release, which also drops any reference to
+          /etc/mtab. If you maintain a distribution make sure that no
+          software you package still references it, as this is a
+          likely source of bugs. There's also a glibc bug pending,
+          asking for removal of any reference to this obsolete file:
+
+          https://sourceware.org/bugzilla/show_bug.cgi?id=19108
+
+          Note that only util-linux versions built with
+          --enable-libmount-force-mountinfo are supported.
+
+        * Support for the ".snapshot" unit type has been removed. This
+          feature turned out to be little useful and little used, and
+          has now been removed from the core and from systemctl.
+
+        * The dependency types RequiresOverridable= and
+          RequisiteOverridable= have been removed from systemd. They
+          have been used only very sparingly to our knowledge and
+          other options that provide a similar effect (such as
+          systemctl --mode=ignore-dependencies) are much more useful
+          and commonly used. Moreover, they were only half-way
+          implemented as the option to control behaviour regarding
+          these dependencies was never added to systemctl. By removing
+          these dependency types the execution engine becomes a bit
+          simpler. Unit files that use these dependencies should be
+          changed to use the non-Overridable dependency types
+          instead. In fact, when parsing unit files with these
+          options, that's what systemd will automatically convert them
+          too, but it will also warn, asking users to fix the unit
+          files accordingly. Removal of these dependency types should
+          only affect a negligible number of unit files in the wild.
+
+        * Behaviour of networkd's IPForward= option changed
+          (again). It will no longer maintain a per-interface setting,
+          but propagate one way from interfaces where this is enabled
+          to the global kernel setting. The global setting will be
+          enabled when requested by a network that is set up, but
+          never be disabled again. This change was made to make sure
+          IPv4 and IPv6 behaviour regarding packet forwarding is
+          similar (as the Linux IPv6 stack does not support
+          per-interface control of this setting) and to minimize
+          surprises.
+
+        * In unit files the behaviour of %u, %U, %h, %s has
+          changed. These specifiers will now unconditionally resolve
+          to the various user database fields of the user that the
+          systemd instance is running as, instead of the user
+          configured in the specific unit via User=. Note that this
+          effectively doesn't change much, as resolving of these
+          specifiers was already turned off in the --system instance
+          of systemd, as we cannot do NSS lookups from PID 1. In the
+          --user instance of systemd these specifiers where correctly
+          resolved, but hardly made any sense, since the user instance
+          lacks privileges to do user switches anyway, and User= is
+          hence useless. Moreover, even in the --user instance of
+          systemd behaviour was awkward as it would only take settings
+          from User= assignment placed before the specifier into
+          account. In order to unify and simplify the logic around
+          this the specifiers will now always resolve to the
+          credentials of the user invoking the manager (which in case
+          of PID 1 is the root user).
+
+        Contributions from: Andrew Jones, Beniamino Galvani, Boyuan
+        Yang, Daniel Machon, Daniel Mack, David Herrmann, David
+        Reynolds, David Strauss, Dongsu Park, Evgeny Vereshchagin,
+        Felipe Sateler, Filipe Brandenburger, Franck Bui, Hristo
+        Venev, Iago López Galeiras, Jan Engelhardt, Jan Janssen, Jan
+        Synacek, Jesus Ornelas Aguayo, Karel Zak, kayrus, Kay Sievers,
+        Lennart Poettering, Liu Yuan Yuan, Mantas Mikulėnas, Marcel
+        Holtmann, Marcin Bachry, Marcos Alano, Marcos Mello, Mark
+        Theunissen, Martin Pitt, Michael Marineau, Michael Olbrich,
+        Michal Schmidt, Michal Sekletar, Mirco Tischler, Nick Owens,
+        Nicolas Cornu, Patrik Flykt, Peter Hutterer, reverendhomer,
+        Ronny Chevalier, Sangjung Woo, Seong-ho Cho, Shawn Landden,
+        Susant Sahani, Thomas Haller, Thomas Hindoe Paaboel Andersen,
+        Tom Gundersen, Torstein Husebø, Vito Caputo, Zbigniew
+        Jędrzejewski-Szmek
+
+        — Berlin, 2015-11-18
+

@@ -1,0 +1,58 @@
+CHANGES WITH 39:
+
+        * This is mostly a test release, but incorporates many
+          bugfixes.
+
+        * New systemd-cgtop tool to show control groups by their
+          resource usage.
+
+        * Linking against libacl for ACLs is optional again. If
+          disabled, support tracking device access for active logins
+          goes becomes unavailable, and so does access to the user
+          journals by the respective users.
+
+        * If a group "adm" exists, journal files are automatically
+          owned by them, thus allow members of this group full access
+          to the system journal as well as all user journals.
+
+        * The journal now stores the SELinux context of the logging
+          client for all entries.
+
+        * Add C++ inclusion guards to all public headers
+
+        * New output mode "cat" in the journal to print only text
+          messages, without any meta data like date or time.
+
+        * Include tiny X server wrapper as a temporary stop-gap to
+          teach XOrg udev display enumeration. This is used by display
+          managers such as gdm, and will go away as soon as XOrg
+          learned native udev hotplugging for display devices.
+
+        * Add new systemd-cat tool for executing arbitrary programs
+          with STDERR/STDOUT connected to the journal. Can also act as
+          BSD logger replacement, and does so by default.
+
+        * Optionally store all locally generated coredumps in the
+          journal along with meta data.
+
+        * systemd-tmpfiles learnt four new commands: n, L, c, b, for
+          writing short strings to files (for usage for /sys), and for
+          creating symlinks, character and block device nodes.
+
+        * New unit file option ControlGroupPersistent= to make cgroups
+          persistent, following the mechanisms outlined in
+          https://www.freedesktop.org/wiki/Software/systemd/PaxControlGroups
+
+        * Support multiple local RTCs in a sane way
+
+        * No longer monopolize IO when replaying readahead data on
+          rotating disks, since we might starve non-file-system IO to
+          death, since fanotify() will not see accesses done by blkid,
+          or fsck.
+
+        * Do not show kernel threads in systemd-cgls anymore, unless
+          requested with new -k switch.
+
+        Contributions from: Dan Horák, Kay Sievers, Lennart
+        Poettering, Michal Schmidt
+

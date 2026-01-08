@@ -1,0 +1,522 @@
+CHANGES WITH 240:
+
+        * NoNewPrivileges=yes has been set for all long-running services
+          implemented by systemd. Previously, this was problematic due to
+          SELinux (as this would also prohibit the transition from PID1's label
+          to the service's label). This restriction has since been lifted, but
+          an SELinux policy update is required.
+          (See e.g. https://github.com/fedora-selinux/selinux-policy/pull/234.)
+
+        * DynamicUser=yes is dropped from systemd-networkd.service,
+          systemd-resolved.service and systemd-timesyncd.service, which was
+          enabled in v239 for systemd-networkd.service and systemd-resolved.service,
+          and since v236 for systemd-timesyncd.service. The users and groups
+          systemd-network, systemd-resolve and systemd-timesync are created
+          by systemd-sysusers again. Distributors or system administrators
+          may need to create these users and groups if they not exist (or need
+          to re-enable DynamicUser= for those units) while upgrading systemd.
+          Also, the clock file for systemd-timesyncd may need to move from
+          /var/lib/private/systemd/timesync/clock to /var/lib/systemd/timesync/clock.
+
+        * When unit files are loaded from disk, previously systemd would
+          sometimes (depending on the unit loading order) load units from the
+          target path of symlinks in .wants/ or .requires/ directories of other
+          units. This meant that unit could be loaded from different paths
+          depending on whether the unit was requested explicitly or as a
+          dependency of another unit, not honouring the priority of directories
+          in search path. It also meant that it was possible to successfully
+          load and start units which are not found in the unit search path, as
+          long as they were requested as a dependency and linked to from
+          .wants/ or .requires/. The target paths of those symlinks are not
+          used for loading units anymore and the unit file must be found in
+          the search path.
+
+        * A new service type has been added: Type=exec. It's very similar to
+          Type=simple but ensures the service manager will wait for both fork()
+          and execve() of the main service binary to complete before proceeding
+          with follow-up units. This is primarily useful so that the manager
+          propagates any errors in the preparation phase of service execution
+          back to the job that requested the unit to be started. For example,
+          consider a service that has ExecStart= set to a file system binary
+          that doesn't exist. With Type=simple starting the unit would be
+          considered instantly successful, as only fork() has to complete
+          successfully and the manager does not wait for execve(), and hence
+          its failure is seen "too late". With the new Type=exec service type
+          starting the unit will fail, as the manager will wait for the
+          execve() and notice its failure, which is then propagated back to the
+          start job.
+
+          NOTE: with the next release 241 of systemd we intend to change the
+          systemd-run tool to default to Type=exec for transient services
+          started by it. This should be mostly safe, but in specific corner
+          cases might result in problems, as the systemd-run tool will then
+          block on NSS calls (such as user name look-ups due to User=) done
+          between the fork() and execve(), which under specific circumstances
+          might cause problems. It is recommended to specify "-p Type=simple"
+          explicitly in the few cases where this applies. For regular,
+          non-transient services (i.e. those defined with unit files on disk)
+          we will continue to default to Type=simple.
+
+        * The Linux kernel's current default RLIMIT_NOFILE resource limit for
+          userspace processes is set to 1024 (soft) and 4096
+          (hard). Previously, systemd passed this on unmodified to all
+          processes it forked off. With this systemd release the hard limit
+          systemd passes on is increased to 512K, overriding the kernel's
+          defaults and substantially increasing the number of simultaneous file
+          descriptors unprivileged userspace processes can allocate. Note that
+          the soft limit remains at 1024 for compatibility reasons: the
+          traditional UNIX select() call cannot deal with file descriptors >=
+          1024 and increasing the soft limit globally might thus result in
+          programs unexpectedly allocating a high file descriptor and thus
+          failing abnormally when attempting to use it with select() (of
+          course, programs shouldn't use select() anymore, and prefer
+          poll()/epoll, but the call unfortunately remains undeservedly popular
+          at this time). This change reflects the fact that file descriptor
+          handling in the Linux kernel has been optimized in more recent
+          kernels and allocating large numbers of them should be much cheaper
+          both in memory and in performance than it used to be. Programs that
+          want to take benefit of the increased limit have to "opt-in" into
+          high file descriptors explicitly by raising their soft limit. Of
+          course, when they do that they must acknowledge that they cannot use
+          select() anymore (and neither can any shared library they use — or
+          any shared library used by any shared library they use and so on).
+          Which default hard limit is most appropriate is of course hard to
+          decide. However, given reports that ~300K file descriptors are used
+          in real-life applications we believe 512K is sufficiently high as new
+          default for now. Note that there are also reports that using very
+          high hard limits (e.g. 1G) is problematic: some software allocates
+          large arrays with one element for each potential file descriptor
+          (Java, …) — a high hard limit thus triggers excessively large memory
+          allocations in these applications. Hopefully, the new default of 512K
+          is a good middle ground: higher than what real-life applications
+          currently need, and low enough for avoid triggering excessively large
+          allocations in problematic software. (And yes, somebody should fix
+          Java.)
+
+        * The fs.nr_open and fs.file-max sysctls are now automatically bumped
+          to the highest possible values, as separate accounting of file
+          descriptors is no longer necessary, as memcg tracks them correctly as
+          part of the memory accounting anyway. Thus, from the four limits on
+          file descriptors currently enforced (fs.file-max, fs.nr_open,
+          RLIMIT_NOFILE hard, RLIMIT_NOFILE soft) we turn off the first two,
+          and keep only the latter two. A set of build-time options
+          (-Dbump-proc-sys-fs-file-max=false and -Dbump-proc-sys-fs-nr-open=false)
+          has been added to revert this change in behaviour, which might be
+          an option for systems that turn off memcg in the kernel.
+
+        * When no /etc/locale.conf file exists (and hence no locale settings
+          are in place), systemd will now use the "C.UTF-8" locale by default,
+          and set LANG= to it. This locale is supported by various
+          distributions including Fedora, with clear indications that upstream
+          glibc is going to make it available too. This locale enables UTF-8
+          mode by default, which appears appropriate for 2018.
+
+        * The "net.ipv4.conf.all.rp_filter" sysctl will now be set to 2 by
+          default. This effectively switches the RFC3704 Reverse Path filtering
+          from Strict mode to Loose mode. This is more appropriate for hosts
+          that have multiple links with routes to the same networks (e.g.
+          a client with a Wi-Fi and Ethernet both connected to the internet).
+
+          Consult the kernel documentation for details on this sysctl:
+          https://docs.kernel.org/networking/ip-sysctl.html
+
+        * The v239 change to turn on "net.ipv4.tcp_ecn" by default has been
+          reverted.
+
+        * CPUAccounting=yes no longer enables the CPU controller when using
+          kernel 4.15+ and the unified cgroup hierarchy, as required accounting
+          statistics are now provided independently from the CPU controller.
+
+        * Support for disabling a particular cgroup controller within a sub-tree
+          has been added through the DisableControllers= directive.
+
+        * cgroup_no_v1=all on the kernel command line now also implies
+          using the unified cgroup hierarchy, unless one explicitly passes
+          systemd.unified_cgroup_hierarchy=0 on the kernel command line.
+
+        * The new "MemoryMin=" unit file property may now be used to set the
+          memory usage protection limit of processes invoked by the unit. This
+          controls the cgroup v2 memory.min attribute. Similarly, the new
+          "IODeviceLatencyTargetSec=" property has been added, wrapping the new
+          cgroup v2 io.latency cgroup property for configuring per-service I/O
+          latency.
+
+        * systemd now supports the cgroup v2 devices BPF logic, as counterpart
+          to the cgroup v1 "devices" cgroup controller.
+
+        * systemd-escape now is able to combine --unescape with --template. It
+          also learnt a new option --instance for extracting and unescaping the
+          instance part of a unit name.
+
+        * sd-bus now provides the sd_bus_message_readv() which is similar to
+          sd_bus_message_read() but takes a va_list object. The pair
+          sd_bus_set_method_call_timeout() and sd_bus_get_method_call_timeout()
+          has been added for configuring the default method call timeout to
+          use. sd_bus_error_move() may be used to efficiently move the contents
+          from one sd_bus_error structure to another, invalidating the
+          source. sd_bus_set_close_on_exit() and sd_bus_get_close_on_exit() may
+          be used to control whether a bus connection object is automatically
+          flushed when an sd-event loop is exited.
+
+        * When processing classic BSD syslog log messages, journald will now
+          save the original time-stamp string supplied in the new
+          SYSLOG_TIMESTAMP= journal field. This permits consumers to
+          reconstruct the original BSD syslog message more correctly.
+
+        * StandardOutput=/StandardError= in service files gained support for
+          new "append:…" parameters, for connecting STDOUT/STDERR of a service
+          to a file, and appending to it.
+
+        * The signal to use as last step of killing of unit processes is now
+          configurable. Previously it was hard-coded to SIGKILL, which may now
+          be overridden with the new KillSignal= setting. Note that this is the
+          signal used when regular termination (i.e. SIGTERM) does not suffice.
+          Similarly, the signal used when aborting a program in case of a
+          watchdog timeout may now be configured too (WatchdogSignal=).
+
+        * The XDG_SESSION_DESKTOP environment variable may now be configured in
+          the pam_systemd argument line, using the new desktop= switch. This is
+          useful to initialize it properly from a display manager without
+          having to touch C code.
+
+        * Most configuration options that previously accepted percentage values
+          now also accept permille values with the '‰' suffix (instead of '%').
+
+        * systemd-resolved may now optionally use OpenSSL instead of GnuTLS for
+          DNS-over-TLS.
+
+        * systemd-resolved's configuration file resolved.conf gained a new
+          option ReadEtcHosts= which may be used to turn off processing and
+          honoring /etc/hosts entries.
+
+        * The "--wait" switch may now be passed to "systemctl
+          is-system-running", in which case the tool will synchronously wait
+          until the system finished start-up.
+
+        * hostnamed gained a new bus call to determine the DMI product UUID.
+
+        * On x86-64 systemd will now prefer using the RDRAND processor
+          instruction over /dev/urandom whenever it requires randomness that
+          neither has to be crypto-grade nor should be reproducible. This
+          should substantially reduce the amount of entropy systemd requests
+          from the kernel during initialization on such systems, though not
+          reduce it to zero. (Why not zero? systemd still needs to allocate
+          UUIDs and such uniquely, which require high-quality randomness.)
+
+        * networkd gained support for Foo-Over-UDP, ERSPAN and ISATAP
+          tunnels. It also gained a new option ForceDHCPv6PDOtherInformation=
+          for forcing the "Other Information" bit in IPv6 RA messages. The
+          bonding logic gained four new options AdActorSystemPriority=,
+          AdUserPortKey=, AdActorSystem= for configuring various 802.3ad
+          aspects, and DynamicTransmitLoadBalancing= for enabling dynamic
+          shuffling of flows. The tunnel logic gained a new
+          IPv6RapidDeploymentPrefix= option for configuring IPv6 Rapid
+          Deployment. The policy rule logic gained four new options IPProtocol=,
+          SourcePort= and DestinationPort=, InvertRule=. The bridge logic gained
+          support for the MulticastToUnicast= option. networkd also gained
+          support for configuring static IPv4 ARP or IPv6 neighbor entries.
+
+        * .preset files (as read by 'systemctl preset') may now be used to
+          instantiate services.
+
+        * /etc/crypttab now understands the sector-size= option to configure
+          the sector size for an encrypted partition.
+
+        * Key material for encrypted disks may now be placed on a formatted
+          medium, and referenced from /etc/crypttab by the UUID of the file
+          system, followed by "=" suffixed by the path to the key file.
+
+        * The "collect" udev component has been removed without replacement, as
+          it is neither used nor maintained.
+
+        * When the RuntimeDirectory=, StateDirectory=, CacheDirectory=,
+          LogsDirectory=, ConfigurationDirectory= settings are used in a
+          service the executed processes will now receive a set of environment
+          variables containing the full paths of these directories.
+          Specifically, RUNTIME_DIRECTORY=, STATE_DIRECTORY, CACHE_DIRECTORY,
+          LOGS_DIRECTORY, CONFIGURATION_DIRECTORY are now set if these options
+          are used. Note that these options may be used multiple times per
+          service in which case the resulting paths will be concatenated and
+          separated by colons.
+
+        * Predictable interface naming has been extended to cover InfiniBand
+          NICs. They will be exposed with an "ib" prefix.
+
+        * tmpfiles.d/ line types may now be suffixed with a '-' character, in
+          which case the respective line failing is ignored.
+
+        * .link files may now be used to configure the equivalent to the
+          "ethtool advertise" commands.
+
+        * The sd-device.h and sd-hwdb.h APIs are now exported, as an
+          alternative to libudev.h. Previously, the latter was just an internal
+          wrapper around the former, but now these two APIs are exposed
+          directly.
+
+        * sd-id128.h gained a new function sd_id128_get_boot_app_specific()
+          which calculates an app-specific boot ID similar to how
+          sd_id128_get_machine_app_specific() generates an app-specific machine
+          ID.
+
+        * A new tool systemd-id128 has been added that can be used to determine
+          and generate various 128-bit IDs.
+
+        * /etc/os-release gained two new standardized fields DOCUMENTATION_URL=
+          and LOGO=.
+
+        * systemd-hibernate-resume-generator will now honor the "noresume"
+          kernel command line option, in which case it will bypass resuming
+          from any hibernated image.
+
+        * The systemd-sleep.conf configuration file gained new options
+          AllowSuspend=, AllowHibernation=, AllowSuspendThenHibernate=,
+          AllowHybridSleep= for prohibiting specific sleep modes even if the
+          kernel exports them.
+
+        * portablectl is now officially supported and has thus moved to
+          /usr/bin/.
+
+        * bootctl learnt the two new commands "set-default" and "set-oneshot"
+          for setting the default boot loader item to boot to (either
+          persistently or only for the next boot). This is currently only
+          compatible with sd-boot, but may be implemented on other boot loaders
+          too, that follow the boot loader interface. The updated interface is
+          now documented here:
+
+          https://systemd.io/BOOT_LOADER_INTERFACE
+
+        * A new kernel command line option systemd.early_core_pattern= is now
+          understood which may be used to influence the core_pattern PID 1
+          installs during early boot.
+
+        * busctl learnt two new options -j and --json= for outputting method
+          call replies, properties and monitoring output in JSON.
+
+        * journalctl's JSON output now supports simple ANSI coloring as well as
+          a new "json-seq" mode for generating RFC7464 output.
+
+        * Unit files now support the %g/%G specifiers that resolve to the UNIX
+          group/GID of the service manager runs as, similar to the existing
+          %u/%U specifiers that resolve to the UNIX user/UID.
+
+        * systemd-logind learnt a new global configuration option
+          UserStopDelaySec= that may be set in logind.conf. It specifies how
+          long the systemd --user instance shall remain started after a user
+          logs out. This is useful to speed up repetitive re-connections of the
+          same user, as it means the user's service manager doesn't have to be
+          stopped/restarted on each iteration, but can be reused between
+          subsequent options. This setting defaults to 10s. systemd-logind also
+          exports two new properties on its Manager D-Bus objects indicating
+          whether the system's lid is currently closed, and whether the system
+          is on AC power.
+
+        * systemd gained support for a generic boot counting logic, which
+          generically permits automatic reverting to older boot loader entries
+          if newer updated ones don't work. The boot loader side is implemented
+          in sd-boot, but is kept open for other boot loaders too. For details
+          see:
+
+          https://systemd.io/AUTOMATIC_BOOT_ASSESSMENT
+
+        * The SuccessAction=/FailureAction= unit file settings now learnt two
+          new parameters: "exit" and "exit-force", which result in immediate
+          exiting of the service manager, and are only useful in systemd --user
+          and container environments.
+
+        * Unit files gained support for a pair of options
+          FailureActionExitStatus=/SuccessActionExitStatus= for configuring the
+          exit status to use as service manager exit status when
+          SuccessAction=/FailureAction= is set to exit or exit-force.
+
+        * A pair of LogRateLimitIntervalSec=/LogRateLimitBurst= per-service
+          options may now be used to configure the log rate limiting applied by
+          journald per-service.
+
+        * systemd-analyze gained a new verb "timespan" for parsing and
+          normalizing time span values (i.e. strings like "5min 7s 8us").
+
+        * systemd-analyze also gained a new verb "security" for analyzing the
+          security and sand-boxing settings of services in order to determine an
+          "exposure level" for them, indicating whether a service would benefit
+          from more sand-boxing options turned on for them.
+
+        * "systemd-analyze syscall-filter" will now also show system calls
+          supported by the local kernel but not included in any of the defined
+          groups.
+
+        * .nspawn files now understand the Ephemeral= setting, matching the
+          --ephemeral command line switch.
+
+        * sd-event gained the new APIs sd_event_source_get_floating() and
+          sd_event_source_set_floating() for controlling whether a specific
+          event source is "floating", i.e. destroyed along with the even loop
+          object itself.
+
+        * Unit objects on D-Bus gained a new "Refs" property that lists all
+          clients that currently have a reference on the unit (to ensure it is
+          not unloaded).
+
+        * The JoinControllers= option in system.conf is no longer supported, as
+          it didn't work correctly, is hard to support properly, is legacy (as
+          the concept only exists on cgroup v1) and apparently wasn't used.
+
+        * Journal messages that are generated whenever a unit enters the failed
+          state are now tagged with a unique MESSAGE_ID. Similarly, messages
+          generated whenever a service process exits are now made recognizable,
+          too. A tagged message is also emitted whenever a unit enters the
+          "dead" state on success.
+
+        * systemd-run gained a new switch --working-directory= for configuring
+          the working directory of the service to start. A shortcut -d is
+          equivalent, setting the working directory of the service to the
+          current working directory of the invoking program. The new --shell
+          (or just -S) option has been added for invoking the $SHELL of the
+          caller as a service, and implies --pty --same-dir --wait --collect
+          --service-type=exec. Or in other words, "systemd-run -S" is now the
+          quickest way to quickly get an interactive in a fully clean and
+          well-defined system service context.
+
+        * machinectl gained a new verb "import-fs" for importing an OS tree
+          from a directory. Moreover, when a directory or tarball is imported
+          and single top-level directory found with the OS itself below the OS
+          tree is automatically mangled and moved one level up.
+
+        * systemd-importd will no longer set up an implicit btrfs loop-back
+          file system on /var/lib/machines. If one is already set up, it will
+          continue to be used.
+
+        * A new generator "systemd-run-generator" has been added. It will
+          synthesize a unit from one or more program command lines included in
+          the kernel command line. This is very useful in container managers
+          for example:
+
+          # systemd-nspawn -i someimage.raw -b systemd.run='"some command line"'
+
+          This will run "systemd-nspawn" on an image, invoke the specified
+          command line and immediately shut down the container again, returning
+          the command line's exit code.
+
+        * The block device locking logic is now documented:
+
+          https://systemd.io/BLOCK_DEVICE_LOCKING
+
+        * loginctl and machinectl now optionally output the various tables in
+          JSON using the --output= switch. It is our intention to add similar
+          support to systemctl and all other commands.
+
+        * udevadm's query and trigger verb now optionally take a .device unit
+          name as argument.
+
+        * systemd-udevd's network naming logic now understands a new
+          net.naming_scheme= kernel command line switch, which may be used to
+          pick a specific version of the naming scheme. This helps stabilizing
+          interface names even as systemd/udev are updated and the naming logic
+          is improved.
+
+        * sd-id128.h learnt two new auxiliary helpers: sd_id128_is_allf() and
+          SD_ID128_ALLF to test if a 128-bit ID is set to all 0xFF bytes, and to
+          initialize one to all 0xFF.
+
+        * After loading the SELinux policy systemd will now recursively relabel
+          all files and directories listed in
+          /run/systemd/relabel-extra.d/*.relabel (which should be simple
+          newline separated lists of paths) in addition to the ones it already
+          implicitly relabels in /run, /dev and /sys. After the relabelling is
+          completed the *.relabel files (and /run/systemd/relabel-extra.d/) are
+          removed. This is useful to permit initrds (i.e. code running before
+          the SELinux policy is in effect) to generate files in the host
+          filesystem safely and ensure that the correct label is applied during
+          the transition to the host OS.
+
+        * KERNEL API BREAKAGE: Linux kernel 4.18 changed behaviour regarding
+          mknod() handling in user namespaces. Previously mknod() would always
+          fail with EPERM in user namespaces. Since 4.18 mknod() will succeed
+          but device nodes generated that way cannot be opened, and attempts to
+          open them result in EPERM. This breaks the "graceful fallback" logic
+          in systemd's PrivateDevices= sand-boxing option. This option is
+          implemented defensively, so that when systemd detects it runs in a
+          restricted environment (such as a user namespace, or an environment
+          where mknod() is blocked through seccomp or absence of CAP_SYS_MKNOD)
+          where device nodes cannot be created the effect of PrivateDevices= is
+          bypassed (following the logic that 2nd-level sand-boxing is not
+          essential if the system systemd runs in is itself already sand-boxed
+          as a whole). This logic breaks with 4.18 in container managers where
+          user namespacing is used: suddenly PrivateDevices= succeeds setting
+          up a private /dev/ file system containing devices nodes — but when
+          these are opened they don't work.
+
+          At this point it is recommended that container managers utilizing
+          user namespaces that intend to run systemd in the payload explicitly
+          block mknod() with seccomp or similar, so that the graceful fallback
+          logic works again.
+
+          We are very sorry for the breakage and the requirement to change
+          container configurations for newer kernels. It's purely caused by an
+          incompatible kernel change. The relevant kernel developers have been
+          notified about this userspace breakage quickly, but they chose to
+          ignore it.
+
+        * PermissionsStartOnly= setting is deprecated (but is still supported
+          for backwards compatibility). The same functionality is provided by
+          the more flexible "+", "!", and "!!" prefixes to ExecStart= and other
+          commands.
+
+        * $DBUS_SESSION_BUS_ADDRESS environment variable is not set by
+          pam_systemd anymore.
+
+        * The naming scheme for network devices was changed to always rename
+          devices, even if they were already renamed by userspace. The "kernel"
+          policy was changed to only apply as a fallback, if no other naming
+          policy took effect.
+
+        * The requirements to build systemd is bumped to meson-0.46 and
+          python-3.5.
+
+        Contributions from: afg, Alan Jenkins, Aleksei Timofeyev, Alexander
+        Filippov, Alexander Kurtz, Alexey Bogdanenko, Andreas Henriksson,
+        Andrew Jorgensen, Anita Zhang, apnix-uk, Arkan49, Arseny Maslennikov,
+        asavah, Asbjørn Apeland, aszlig, Bastien Nocera, Ben Boeckel, Benedikt
+        Morbach, Benjamin Berg, Bruce Zhang, Carlo Caione, Cedric Viou, Chen
+        Qi, Chris Chiu, Chris Down, Chris Morin, Christian Rebischke, Claudius
+        Ellsel, Colin Guthrie, dana, Daniel, Daniele Medri, Daniel Kahn
+        Gillmor, Daniel Rusek, Daniel van Vugt, Dariusz Gadomski, Dave Reisner,
+        David Anderson, Davide Cavalca, David Leeds, David Malcolm, David
+        Strauss, David Tardon, Dimitri John Ledkov, Dmitry Torokhov, dj-kaktus,
+        Dongsu Park, Elias Probst, Emil Soleyman, Erik Kooistra, Ervin Peters,
+        Evgeni Golov, Evgeny Vereshchagin, Fabrice Fontaine, Faheel Ahmad,
+        Faizal Luthfi, Felix Yan, Filipe Brandenburger, Franck Bui, Frank
+        Schaefer, Frantisek Sumsal, Gautier Husson, Gianluca Boiano, Giuseppe
+        Scrivano, glitsj16, Hans de Goede, Harald Hoyer, Harry Mallon, Harshit
+        Jain, Helmut Grohne, Henry Tung, Hui Yiqun, imayoda, Insun Pyo, Iwan
+        Timmer, Jan Janssen, Jan Pokorný, Jan Synacek, Jason A. Donenfeld,
+        javitoom, Jérémy Nouhaud, Jeremy Su, Jiuyang Liu, João Paulo Rechi
+        Vita, Joe Hershberger, Joe Rayhawk, Joerg Behrmann, Joerg Steffens,
+        Jonas Dorel, Jon Ringle, Josh Soref, Julian Andres Klode, Jun Bo Bi,
+        Jürg Billeter, Keith Busch, Khem Raj, Kirill Marinushkin, Larry
+        Bernstone, Lennart Poettering, Lion Yang, Li Song, Lorenz
+        Hübschle-Schneider, Lubomir Rintel, Lucas Werkmeister, Ludwin Janvier,
+        Lukáš Nykrýn, Luke Shumaker, mal, Marc-Antoine Perennou, Marcin
+        Skarbek, Marco Trevisan (Treviño), Marian Cepok, Mario Hros, Marko
+        Myllynen, Markus Grimm, Martin Pitt, Martin Sobotka, Martin Wilck,
+        Mathieu Trudel-Lapierre, Matthew Leeds, Michael Biebl, Michael Olbrich,
+        Michael 'pbone' Pobega, Michael Scherer, Michal Koutný, Michal
+        Sekletar, Michal Soltys, Mike Gilbert, Mike Palmer, Muhammet Kara, Neal
+        Gompa, Neil Brown, Network Silence, Niklas Tibbling, Nikolas Nyby,
+        Nogisaka Sadata, Oliver Smith, Patrik Flykt, Pavel Hrdina, Paweł
+        Szewczyk, Peter Hutterer, Piotr Drąg, Ray Strode, Reinhold Mueller,
+        Renaud Métrich, Roman Gushchin, Ronny Chevalier, Rubén Suárez Alvarez,
+        Ruixin Bao, RussianNeuroMancer, Ryutaroh Matsumoto, Saleem Rashid, Sam
+        Morris, Samuel Morris, Sandy Carter, scootergrisen, Sébastien Bacher,
+        Sergey Ptashnick, Shawn Landden, Shengyao Xue, Shih-Yuan Lee
+        (FourDollars), Silvio Knizek, Sjoerd Simons, Stasiek Michalski, Stephen
+        Gallagher, Steven Allen, Steve Ramage, Susant Sahani, Sven Joachim,
+        Sylvain Plantefève, Tanu Kaskinen, Tejun Heo, Thiago Macieira, Thomas
+        Blume, Thomas Haller, Thomas H. P. Andersen, Tim Ruffing, TJ, Tobias
+        Jungel, Todd Walton, Tommi Rantala, Tomsod M, Tony Novak, Tore
+        Anderson, Trevonn, Victor Laskurain, Victor Tapia, Violet Halo, Vojtech
+        Trefny, welaq, William A. Kennington III, William Douglas, Wyatt Ward,
+        Xiang Fan, Xi Ruoyao, Xuanwo, Yann E. Morin, YmrDtnJu, Yu Watanabe,
+        Zbigniew Jędrzejewski-Szmek, Zhang Xianwei, Zsolt Dollenstein
+
+        — Warsaw, 2018-12-21
+

@@ -1,0 +1,35 @@
+CHANGES WITH 191:
+
+        * nspawn will now create a symlink /etc/localtime in the
+          container environment, copying the host's timezone
+          setting. Previously this has been done via a bind mount, but
+          since symlinks cannot be bind mounted this has now been
+          changed to create/update the appropriate symlink.
+
+        * journalctl -n's line number argument is now optional, and
+          will default to 10 if omitted.
+
+        * journald will now log the maximum size the journal files may
+          take up on disk. This is particularly useful if the default
+          built-in logic of determining this parameter from the file
+          system size is used. Use "systemctl status
+          systemd-journald.service" to see this information.
+
+        * The multi-seat X wrapper tool has been stripped down. As X
+          is now capable of enumerating graphics devices via udev in a
+          seat-aware way the wrapper is not strictly necessary
+          anymore. A stripped down temporary stop-gap is still shipped
+          until the upstream display managers have been updated to
+          fully support the new X logic. Expect this wrapper to be
+          removed entirely in one of the next releases.
+
+        * HandleSleepKey= in logind.conf has been split up into
+          HandleSuspendKey= and HandleHibernateKey=. The old setting
+          is not available anymore. X11 and the kernel are
+          distinguishing between these keys and we should too. This
+          also means the inhibition lock for these keys has been split
+          into two.
+
+        Contributions from: Dave Airlie, Eelco Dolstra, Lennart
+        Poettering, Lukas Nykryn, Václav Pavlín
+

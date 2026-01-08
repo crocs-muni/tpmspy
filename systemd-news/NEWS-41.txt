@@ -1,0 +1,28 @@
+CHANGES WITH 41:
+
+        * The systemd binary is installed /usr/lib/systemd/systemd now;
+          An existing /sbin/init symlink needs to be adapted with the
+          package update.
+
+        * The code that loads kernel modules has been ported to invoke
+          libkmod directly, instead of modprobe. This means we do not
+          support systems with module-init-tools anymore.
+
+        * Watchdog support is now already useful, but still not
+          complete.
+
+        * A new kernel command line option systemd.setenv= is
+          understood to set system wide environment variables
+          dynamically at boot.
+
+        * We now limit the set of capabilities of systemd-journald.
+
+        * We now set SIGPIPE to ignore by default, since it only is
+          useful in shell pipelines, and has little use in general
+          code. This can be disabled with IgnoreSIPIPE=no in unit
+          files.
+
+        Contributions from: Benjamin Franzke, Kay Sievers, Lennart
+        Poettering, Michael Olbrich, Michal Schmidt, Tom Gundersen,
+        William Douglas
+

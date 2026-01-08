@@ -1,0 +1,19 @@
+CHANGES WITH 185:
+
+        * "systemctl help <unit>" now shows the man page if one is
+          available.
+
+        * Several new man pages have been added.
+
+        * MaxLevelStore=, MaxLevelSyslog=, MaxLevelKMsg=,
+          MaxLevelConsole= can now be specified in
+          journald.conf. These options allow reducing the amount of
+          data stored on disk or forwarded by the log level.
+
+        * TimerSlackNSec= can now be specified in system.conf for
+          PID1. This allows system-wide power savings.
+
+        Contributions from: Dave Reisner, Kay Sievers, Lauri Kasanen,
+        Lennart Poettering, Malte Starostik, Marc-Antoine Perennou,
+        Matthias Clasen
+

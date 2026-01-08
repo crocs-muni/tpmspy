@@ -1,0 +1,17 @@
+CHANGES WITH 184:
+
+        * logind is now capable of (optionally) handling power and
+          sleep keys as well as the lid switch.
+
+        * journalctl now understands the syntax "journalctl
+          /usr/bin/avahi-daemon" to get all log output of a specific
+          daemon.
+
+        * CapabilityBoundingSet= in system.conf now also influences
+          the capability bound set of usermode helpers of the kernel.
+
+        Contributions from: Daniel Drake, Daniel J. Walsh, Gert
+        Michael Kulyk, Harald Hoyer, Jean Delvare, Kay Sievers,
+        Lennart Poettering, Matthew Garrett, Matthias Clasen, Paul
+        Menzel, Shawn Landden, Tero Roponen, Tom Gundersen
+

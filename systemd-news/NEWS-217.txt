@@ -1,0 +1,212 @@
+CHANGES WITH 217:
+
+        * journalctl gained the new options -t/--identifier= to match
+          on the syslog identifier (aka "tag"), as well as --utc to
+          show log timestamps in the UTC timezone. journalctl now also
+          accepts -n/--lines=all to disable line capping in a pager.
+
+        * journalctl gained a new switch, --flush, that synchronously
+          flushes logs from /run/log/journal to /var/log/journal if
+          persistent storage is enabled. systemd-journal-flush.service
+          now waits until the operation is complete.
+
+        * Services can notify the manager before they start a reload
+          (by sending RELOADING=1) or shutdown (by sending
+          STOPPING=1). This allows the manager to track and show the
+          internal state of daemons and closes a race condition when
+          the process is still running but has closed its D-Bus
+          connection.
+
+        * Services with Type=oneshot do not have to have any ExecStart
+          commands anymore.
+
+        * User units are now loaded also from
+          $XDG_RUNTIME_DIR/systemd/user/. This is similar to the
+          /run/systemd/user directory that was already previously
+          supported, but is under the control of the user.
+
+        * Job timeouts (i.e. timeouts on the time a job that is
+          queued stays in the run queue) can now optionally result in
+          immediate reboot or power-off actions (JobTimeoutAction= and
+          JobTimeoutRebootArgument=). This is useful on ".target"
+          units, to limit the maximum time a target remains
+          undispatched in the run queue, and to trigger an emergency
+          operation in such a case. This is now used by default to
+          turn off the system if boot-up (as defined by everything in
+          basic.target) hangs and does not complete for at least
+          15min. Also, if power-off or reboot hang for at least 30min
+          an immediate power-off/reboot operation is triggered. This
+          functionality is particularly useful to increase reliability
+          on embedded devices, but also on laptops which might
+          accidentally get powered on when carried in a backpack and
+          whose boot stays stuck in a hard disk encryption passphrase
+          question.
+
+        * systemd-logind can be configured to also handle lid switch
+          events even when the machine is docked or multiple displays
+          are attached (HandleLidSwitchDocked= option).
+
+        * A helper binary and a service have been added which can be
+          used to resume from hibernation in the initramfs. A
+          generator will parse the resume= option on the kernel
+          command line to trigger resume.
+
+        * A user console daemon systemd-consoled has been
+          added. Currently, it is a preview, and will so far open a
+          single terminal on each session of the user marked as
+          Desktop=systemd-console.
+
+        * Route metrics can be specified for DHCP routes added by
+          systemd-networkd.
+
+        * The SELinux context of socket-activated services can be set
+          from the information provided by the networking stack
+          (SELinuxContextFromNet= option).
+
+        * Userspace firmware loading support has been removed and
+          the minimum supported kernel version is thus bumped to 3.7.
+
+        * Timeout for udev workers has been increased from 1 to 3
+          minutes, but a warning will be printed after 1 minute to
+          help diagnose kernel modules that take a long time to load.
+
+        * Udev rules can now remove tags on devices with TAG-="foobar".
+
+        * systemd's readahead implementation has been removed. In many
+          circumstances it didn't give expected benefits even for
+          rotational disk drives and was becoming less relevant in the
+          age of SSDs. As none of the developers has been using
+          rotating media anymore, and nobody stepped up to actively
+          maintain this component of systemd it has now been removed.
+
+        * Swap units can use Options= to specify discard options.
+          Discard options specified for swaps in /etc/fstab are now
+          respected.
+
+        * Docker containers are now detected as a separate type of
+          virtualization.
+
+        * The Password Agent protocol gained support for queries where
+          the user input is shown, useful e.g. for user names.
+          systemd-ask-password gained a new --echo option to turn that
+          on.
+
+        * The default sysctl.d/ snippets will now set:
+
+                net.core.default_qdisc = fq_codel
+
+          This selects Fair Queuing Controlled Delay as the default
+          queuing discipline for network interfaces. fq_codel helps
+          fight the network bufferbloat problem. It is believed to be
+          a good default with no tuning required for most workloads.
+          Downstream distributions may override this choice. On 10Gbit
+          servers that do not do forwarding, "fq" may perform better.
+          Systems without a good clocksource should use "pfifo_fast".
+
+        * If kdbus is enabled during build a new option BusPolicy= is
+          available for service units, that allows locking all service
+          processes into a stricter bus policy, in order to limit
+          access to various bus services, or even hide most of them
+          from the service's view entirely.
+
+        * networkctl will now show the .network and .link file
+          networkd has applied to a specific interface.
+
+        * sd-login gained a new API call sd_session_get_desktop() to
+          query which desktop environment has been selected for a
+          session.
+
+        * UNIX utmp support is now compile-time optional to support
+          legacy-free systems.
+
+        * systemctl gained two new commands "add-wants" and
+          "add-requires" for pulling in units from specific targets
+          easily.
+
+        * If the word "rescue" is specified on the kernel command line
+          the system will now boot into rescue mode (aka
+          rescue.target), which was previously available only by
+          specifying "1" or "systemd.unit=rescue.target" on the kernel
+          command line. This new kernel command line option nicely
+          mirrors the already existing "emergency" kernel command line
+          option.
+
+        * New kernel command line options mount.usr=, mount.usrflags=,
+          mount.usrfstype= have been added that match root=, rootflags=,
+          rootfstype= but allow mounting a specific file system to
+          /usr.
+
+        * The $NOTIFY_SOCKET is now also passed to control processes of
+          services, not only the main process.
+
+        * This version reenables support for fsck's -l switch. This
+          means at least version v2.25 of util-linux is required for
+          operation, otherwise dead-locks on device nodes may
+          occur. Again: you need to update util-linux to at least
+          v2.25 when updating systemd to v217.
+
+        * The "multi-seat-x" tool has been removed from systemd, as
+          its functionality has been integrated into X servers 1.16,
+          and the tool is hence redundant. It is recommended to update
+          display managers invoking this tool to simply invoke X
+          directly from now on, again.
+
+        * Support for the new ALLOW_INTERACTIVE_AUTHORIZATION D-Bus
+          message flag has been added for all of systemd's polkit
+          authenticated method calls has been added. In particular this
+          now allows optional interactive authorization via polkit for
+          many of PID1's privileged operations such as unit file
+          enabling and disabling.
+
+        * "udevadm hwdb --update" learnt a new switch "--usr" for
+          placing the rebuilt hardware database in /usr instead of
+          /etc. When used only hardware database entries stored in
+          /usr will be used, and any user database entries in /etc are
+          ignored. This functionality is useful for vendors to ship a
+          pre-built database on systems where local configuration is
+          unnecessary or unlikely.
+
+        * Calendar time specifications in .timer units now also
+          understand the strings "semi-annually", "quarterly" and
+          "minutely" as shortcuts (in addition to the preexisting
+          "annually", "hourly", …).
+
+        * systemd-tmpfiles will now correctly create files in /dev
+          at boot which are marked for creation only at boot. It is
+          recommended to always create static device nodes with 'c!'
+          and 'b!', so that they are created only at boot and not
+          overwritten at runtime.
+
+        * When the watchdog logic is used for a service (WatchdogSec=)
+          and the watchdog timeout is hit the service will now be
+          terminated with SIGABRT (instead of just SIGTERM), in order
+          to make sure a proper coredump and backtrace is
+          generated. This ensures that hanging services will result in
+          similar coredump/backtrace behaviour as services that hit a
+          segmentation fault.
+
+        Contributions from: Andreas Henriksson, Andrei Borzenkov,
+        Angus Gibson, Ansgar Burchardt, Ben Wolsieffer, Brandon L.
+        Black, Christian Hesse, Cristian Rodríguez, Daniel Buch,
+        Daniele Medri, Daniel Mack, Dan Williams, Dave Reisner, David
+        Herrmann, David Sommerseth, David Strauss, Emil Renner
+        Berthing, Eric Cook, Evangelos Foutras, Filipe Brandenburger,
+        Gustavo Sverzut Barbieri, Hans de Goede, Harald Hoyer, Hristo
+        Venev, Hugo Grostabussiat, Ivan Shapovalov, Jan Janssen, Jan
+        Synacek, Jonathan Liu, Juho Son, Karel Zak, Kay Sievers, Klaus
+        Purer, Koen Kooi, Lennart Poettering, Lukas Nykryn, Lukasz
+        Skalski, Łukasz Stelmach, Mantas Mikulėnas, Marcel Holtmann,
+        Marius Tessmann, Marko Myllynen, Martin Pitt, Michael Biebl,
+        Michael Marineau, Michael Olbrich, Michael Scherer, Michal
+        Schmidt, Michal Sekletar, Miroslav Lichvar, Patrik Flykt,
+        Philippe De Swert, Piotr Drąg, Rahul Sundaram, Richard
+        Weinberger, Robert Milasan, Ronny Chevalier, Ruben Kerkhof,
+        Santiago Vila, Sergey Ptashnick, Simon McVittie, Sjoerd
+        Simons, Stefan Brüns, Steven Allen, Steven Noonan, Susant
+        Sahani, Sylvain Plantefève, Thomas Hindoe Paaboel Andersen,
+        Timofey Titovets, Tobias Hunger, Tom Gundersen, Torstein
+        Husebø, Umut Tezduyar Lindskog, WaLyong Cho, Zbigniew
+        Jędrzejewski-Szmek
+
+        — Berlin, 2014-10-28
+

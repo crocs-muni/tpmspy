@@ -1,0 +1,12 @@
+CHANGES WITH 204:
+
+        * The Python bindings gained some minimal support for the APIs
+          exposed by libsystemd-logind.
+
+        * ConditionSecurity= gained support for detecting SMACK. Since
+          this condition already supports SELinux and AppArmor we only
+          miss IMA for this. Patches welcome!
+
+        Contributions from: Karol Lewandowski, Lennart Poettering,
+        Zbigniew Jędrzejewski-Szmek
+
