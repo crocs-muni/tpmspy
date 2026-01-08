@@ -14,7 +14,6 @@ from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from typing import Any
 from typing import Generator as RawGenerator
-from typing import reveal_type
 from typing import TypeAlias
 from typing import TypeVar
 
@@ -37,7 +36,7 @@ def matplotlib_setup() -> None:
         'axes.axisbelow': True,
         'text.usetex': True,
         'font.family': 'serif',
-        'font.size': 16,
+        'font.size': 20,
         'pdf.fonttype': 42,
         'ps.fonttype': 42,
     })
@@ -55,9 +54,9 @@ def _pcr_extend(fig: Figure, ax: Axes, t: int, packet: Packet) -> None:
         return
 
     ax.plot(t, pcr,
-            color='r',
+            color='#2e8b57',
             marker='o',
-            markersize=10,
+            markersize=8,
             linestyle='None',
             label='PCR_Extend(' + str(pcr) + ')')
 
@@ -115,9 +114,10 @@ def get_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("file", help="Input JSON file")
     parser.add_argument("-o", "--output", default="graph.svg", help="Output file")
     parser.add_argument("--all-events", help="Show all events below the graph using random symbols")
+    parser.add_argument("--pcr-read", help="Include PCR_Read operation as a cross")
     parser.add_argument("--pcrs", type=int, default=16, help="Number of PCRs to plot (1 to 24)")
     parser.add_argument("--start", type=float, default=-1.0, help="Start of the slice of the trace to display")
-    parser.add_argument("--end", type=float, default=3.0, help="End of the slice of the trace to display")
+    parser.add_argument("--end", type=float, default=None, help="End of the slice of the trace to display")
     parser.add_argument("--title", default="PCR vs Time", help="Graph title")
     return parser
 
@@ -134,7 +134,7 @@ def main() -> None:
     if not (1 <= args.pcrs <= 24):
         die("Number of PCRs must be between 1 and 24")
 
-    if args.start >= args.end:
+    if args.end is not None and args.start >= args.end:
         die("Start must be less than end")
 
     matplotlib_setup()
@@ -147,6 +147,7 @@ def main() -> None:
         return
 
     first_packet_time = None
+    last_packet_time: float | None = None
 
     with create_subplots(figsize=(10, 5), dpi=50) as (fig, ax):
         pt_cfg: dict[str, dict[str, Any]] = {}
@@ -160,16 +161,26 @@ def main() -> None:
                 first_packet_time = packet_time
             packet_rel_time = packet_time - first_packet_time
 
+            if last_packet_time is None:
+                last_packet_time = packet_rel_time
+            else:
+                last_packet_time = max(last_packet_time, packet_rel_time)
+
             match packet.get("req", {}).get("name", None):
                 case "CMD_PCR_Extend":
                     _pcr_extend(fig, ax, packet_rel_time, packet)
                 case "CMD_PCR_Read":
-                    _pcr_read(fig, ax, packet_rel_time, packet)
+                    if args.pcr_read:
+                        _pcr_read(fig, ax, packet_rel_time, packet)
                 case "CMD_SET_LOCALITY":
                     ax.axvline(x=packet_rel_time, color='orange', linewidth=0.5)
                 case _:
                     if args.all_events:
                         _cmd_generic(fig, ax, packet_rel_time, packet, pt_cfg)
+
+        if args.end is None:
+            assert last_packet_time is not None
+            args.end = last_packet_time + 1
 
         ax.axhline(y=0, color='black', linewidth=2)
         ax.axhline(y=8, color='black', linewidth=1.5)

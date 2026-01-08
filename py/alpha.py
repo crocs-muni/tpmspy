@@ -54,7 +54,7 @@ def _pcr_extend(fig: Figure, ax: Axes, t: int, packet: Packet) -> None:
         return
 
     ax.plot(t, pcr,
-            color='r',
+            color='blue',
             alpha=0.2,
             marker='o',
             markersize=6,
@@ -92,8 +92,10 @@ def _cmd_generic(fig: Figure, ax: Axes, t: int, packet: Packet, pt_cfg: Any) -> 
     pass
 
 
-def process_packets(fig: Figure, ax: Axes, packets: list[Packet]) -> None:
+def process_packets(fig: Figure, ax: Axes, packets: list[Packet]) -> float:
     first_packet_time = None
+    last_packet_time: float | None = None
+
     pt_cfg: dict[str, dict[str, Any]] = {}
 
     for packet in packets:
@@ -107,6 +109,11 @@ def process_packets(fig: Figure, ax: Axes, packets: list[Packet]) -> None:
 
         match packet.get("req", {}).get("name", None):
             case "CMD_PCR_Extend":
+                if last_packet_time is None:
+                    last_packet_time = packet_rel_time
+                else:
+                    last_packet_time = max(last_packet_time, packet_rel_time)
+
                 _pcr_extend(fig, ax, packet_rel_time, packet)
             case "CMD_PCR_Read":
                 _pcr_read(fig, ax, packet_rel_time, packet)
@@ -115,6 +122,9 @@ def process_packets(fig: Figure, ax: Axes, packets: list[Packet]) -> None:
             case _:
                 _cmd_generic(fig, ax, packet_rel_time, packet, pt_cfg)
 
+    assert last_packet_time is not None
+    return last_packet_time
+
 
 def get_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Plot TPM PCR_Extend from JSON files")
@@ -122,7 +132,7 @@ def get_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("-o", "--output", default="graph.svg", help="Output file (default: graph.svg)")
     parser.add_argument("--pcrs", type=int, default=16, help="Number of PCRs to plot (1 to 24)")
     parser.add_argument("--start", type=float, default=-0.25, help="Start of the slice of the trace to display")
-    parser.add_argument("--end", type=float, default=5.0, help="End of the slice of the trace to display")
+    parser.add_argument("--end", type=float, default=None, help="End of the slice of the trace to display")
     parser.add_argument("--title", default="PCR vs Time", help="Graph title")
     return parser
 
@@ -142,7 +152,7 @@ def main() -> None:
     if not (1 <= args.pcrs <= 24):
         die("Number of PCRs must be between 1 and 24")
 
-    if args.start >= args.end:
+    if args.end is not None and args.start >= args.end:
         die("Start must be less than end")
 
     matplotlib_setup()
@@ -155,7 +165,11 @@ def main() -> None:
                 print(f"{file_name}: No packets found")
                 continue
 
-            process_packets(fig, ax, packets)
+            last_packet_time = process_packets(fig, ax, packets)
+
+        if args.end is None:
+            assert last_packet_time is not None
+            args.end = last_packet_time
 
         ax.axhline(y=0, color='black', linewidth=2)
         ax.axhline(y=8, color='black', linewidth=1.5)

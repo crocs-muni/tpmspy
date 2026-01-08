@@ -1,14 +1,13 @@
 #!/bin/env python3
 
 import argparse
-import json
 import matplotlib
 import matplotlib.pyplot as plt
 import sys
 
 from contextlib import contextmanager
 from matplotlib.figure import Figure
-from tpmspy.trace import trace_from_packets
+from tpmspy.trace import tpmspy_trace_open
 from typing import Any
 from typing import Generator as RawGenerator
 from typing import TypeAlias
@@ -48,30 +47,29 @@ def matplotlib_setup() -> None:
     ])
 
 
-def _get_raw_data_from_file(file_name: str) -> list[tuple[PCRIndex, Digest, TimeStamp]]:
-    result: list[tuple[PCRIndex, Digest, TimeStamp]] = []
+def _get_raw_data_from_file(file_name: str) -> list[tuple[PCRIndex, TimeStamp]]:
+    result: list[tuple[PCRIndex, TimeStamp]] = []
 
-    with open(file_name, "r") as file:
-        trace = trace_from_packets(file_name, json.load(file)["packets"], "SHA1")
-        for pcr, digest, ts in trace.extend:
-            assert ts is not None
-            result.append((pcr, digest, ts))
+    trace = tpmspy_trace_open(file_name)
+    for pcr, _, ts in trace.extends:
+        assert ts is not None
+        result.append((pcr, ts))
 
     return result
 
 
-def get_raw_data(files: list[str]) -> list[list[tuple[PCRIndex, Digest, TimeStamp]]]:
+def get_raw_data(files: list[str]) -> list[list[tuple[PCRIndex, TimeStamp]]]:
     return [_get_raw_data_from_file(x) for x in files]
 
 
-def transpose_data(traces: list[list[tuple[PCRIndex, Digest, TimeStamp]]]) -> list[tuple[PCRIndex, list[TimeStamp]]]:
+def transpose_data(traces: list[list[tuple[PCRIndex, TimeStamp]]]) -> list[tuple[PCRIndex, list[TimeStamp]]]:
     first = traces[0]
 
     result: list[tuple[PCRIndex, list[TimeStamp]]] = []
     for trace_ix, trace in enumerate(traces):
-        for entry_ix, (pcr, digest, ts) in enumerate(trace):
-            if trace_ix != 0 and (first[entry_ix][0] != pcr or first[entry_ix][1] != digest):
-                die(f"Trace {trace_ix} entry {entry_ix} differs from expected values: {first[entry_ix][0]=}!={pcr=} {first[entry_ix][1]=}!={digest=}")
+        for entry_ix, (pcr, ts) in enumerate(trace):
+            if trace_ix != 0 and first[entry_ix][0] != pcr:
+                die(f"Trace {trace_ix} entry {entry_ix} differs from expected values: {first[entry_ix][0]=}!={pcr=}")
 
             if trace_ix == 0:
                 result.append((pcr, [ts]))
