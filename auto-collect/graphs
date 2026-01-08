@@ -1,0 +1,89 @@
+#!/bin/sh
+
+# ‹graphs› - Create graphs for TPMSpy measurements
+#
+# 	graphs [-h] [-f] DIR
+#
+# ‹DIR› is searched for directories containing ‹tpmspy.json›, and creates
+# ‹tpmspy.svg› using ‹single.py›.
+#
+# If the directory also contains ‹tpm2-log-platform.txt›, then the graphs
+# are created using ‹single2.py› that also colour-codes measurements in TPMSpy
+# missing from TPM Event Log.
+#
+# Graphs are never overwritten unless ‹-f› is passed as an option.
+
+script_path=$(readlink -f "$0")
+script_bin=$(dirname "${script_path}")
+script_name=$(basename "${script_path}")
+
+. "$script_bin/common"
+
+
+usage() {
+	echo "usage: $script_name DIR" >&2
+}
+
+find_bin() {
+	for path in "$script_bin/../py"; do
+		if [ -x "$path/$1" ]; then
+			echo "$path/$1"
+			return
+		fi
+	done
+
+	# Last resort -- try looking everywhere
+	if ! find "$script_bin/.." -type f -name "$1" -executable | head -n1 | grep '^'; then
+		echo "No $1 executable found" >&2
+		exit 1
+	fi
+}
+
+opt_force=0
+while getopts "hf" option; do
+	case "${option}" in
+	h)
+		usage
+		exit 0
+		;;
+	f)
+		opt_force=1
+		;;
+	*)
+		usage >&2
+		exit 1
+	esac
+done
+
+shift $((OPTIND - 1))
+
+if [ "$#" -ne 1 ]; then
+	usage >&2
+	exit 1
+fi
+
+dir="$1"
+
+graph1=$(find_bin single.py)
+graph2=$(find_bin single2.py)
+
+graph_opts="--start=-0.5 --end=7.0"
+
+find "$dir" -name 'tpmspy.json' | while read -r tpmspy_log; do
+	base=$(dirname "$tpmspy_log")
+	graph="$base/tpmspy.svg"
+	tpmev_log="$base/tpm2-log-platform.txt"
+
+	if [ -e "$graph" ] && [ "$opt_force" -ne 1 ]; then
+		echo "$graph: File exists, skipping"
+		continue
+	fi
+
+	if [ -e "$tpmev_log" ]; then
+		"$graph2" -o "$graph" $graph_opts "$tpmspy_log" "$tpmev_log"
+	else
+		"$graph1" -o "$graph" $graph_opts "$tpmspy_log"
+	fi
+
+	echo "$graph"
+done
