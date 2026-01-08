@@ -5,7 +5,7 @@
 #include <swtpm/tpm_ioctl.h>
 #include <swtpm/tpmlib.h>
 
-#include "tss2/tss2_tpm2_types.h"
+#include <tss2/tss2_tpm2_types.h>
 
 /* Sources:
  * https://github.com/stefanberger/swtpm/blob/master/include/swtpm/tpm_ioctl.h

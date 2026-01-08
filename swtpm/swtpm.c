@@ -92,7 +92,7 @@ void _passthrough_check_exe_loop(void)
 		croak("passthrough(): Loop detected for execv()");
 }
 
-private no_return
+no_return private
 void passthrough(int /*argc*/, char *argv[])
 {
 	/* Prevent unwanted loops if, by accident, we already are run as the
@@ -210,7 +210,7 @@ int creat_excl(const char *filename, int flags)
 	return open(filename, O_RDWR | O_CREAT | O_EXCL, flags);
 }
 
-private no_return
+no_return private
 void _start_swtpm_exec(const char *data_dir, char *argv[])
 {
 	char log_file[PATH_MAX];
@@ -343,7 +343,7 @@ cleanup_sock_name:
 	return status ? pid : -1;
 }
 
-private no_return
+no_return private
 void _start_tpmspy_exec(const char *data_dir, const char *swtpm_sock, const char *qemu_sock)
 {
 	char log_file[PATH_MAX];

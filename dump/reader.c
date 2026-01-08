@@ -4,6 +4,7 @@
 #include <stdlib.h>
 
 #include <err.h>
+#include <endian.h>
 #include <unistd.h>
 
 private

@@ -4,6 +4,8 @@
 
 #include <stdlib.h>
 
+#include <sys/types.h>
+
 struct strings {
 	size_t capacity;
 	size_t size;
