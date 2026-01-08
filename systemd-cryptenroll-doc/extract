@@ -1,0 +1,85 @@
+#!/usr/bin/perl
+
+use v5.40;
+
+use Carp;
+use Digest;
+use File::Basename;
+use Getopt::Long qw{:config bundling no_auto_abbrev};
+
+sub get_tags($repo, $from, $to) {
+	my @tags = qx{git -C "$repo" tag --list --merged "$to" --no-merged "$from^"};
+	croak "Cannot list commits of the repository" unless $? == 0;
+
+	return map { chomp; $_ } @tags;
+}
+
+sub get_content($repo, $ref, $file) {
+	my $text = qx{git -C "$repo" cat-file -p "$ref:$file" 2>/dev/null};
+	return unless $? == 0 && defined $text && length $text > 0;
+	return $text;
+}
+
+sub get_hash(@data) {
+	Digest->new('SHA-1')->add(map {; ":", $_ } @data)->b64digest;
+}
+
+sub get_target_file_name($original, $tag) {
+	my ($root, undef, $suffix) = ($original =~ m{([^/]+?)(\.([^.]+))?$});
+	return join '.', grep { defined } $root, $tag, $suffix;
+}
+
+sub accept_tag($tag) {
+	return $::OPTIONS->{all} || $tag =~ m{^v?\d+$};
+}
+
+$::OPTIONS = {
+	from => 'v240',
+	to => 'main',
+	file => 'man/systemd-cryptenroll.xml',
+};
+
+GetOptions($::OPTIONS, qw{
+	all|a
+	from=s
+	to=s
+	file|f=s
+}) or exit 1;
+
+die "usage: $0 [--all] [--ref START-REF] SYSTEMD-GIT-PATH\n"
+	unless @ARGV == 1;
+
+my ($repo) = @ARGV;
+
+local $| = 1;
+my %contents;
+
+foreach my $tag (get_tags($repo, $::OPTIONS->@{'from', 'to'})) {
+	next if !accept_tag($tag);
+
+	my $content = get_content($repo, $tag, $::OPTIONS->{file});
+
+	if (!defined $content) {
+		say STDERR "$tag: File not found or empty";
+		next;
+	}
+
+	my $hash = get_hash($content);
+	my $target = get_target_file_name($::OPTIONS->{file}, $tag);
+
+	open my $fh, '>:raw', $target
+		or croak "$target: $!";
+
+	print { $fh } $content;
+	close $fh;
+
+	if (!$contents{$hash}) {
+		say "\e[92m$tag\e[0m (new content) written to $target";
+	} else {
+		say "\e[93m$tag\e[0m (no changes) written to $target";
+	}
+
+	$contents{$hash}++;
+}
+
+say "Done\e[0K";
