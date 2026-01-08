@@ -15,7 +15,6 @@ script_path=$(readlink -f "$0")
 script_bin=$(dirname "${script_path}")
 script_name=$(basename "${script_path}")
 
-. "$script_bin/config"
 . "$script_bin/common"
 
 
@@ -49,17 +48,48 @@ fi
 flake="$1"
 host_ip=$(virsh_start "$cfg_machine" "$cfg_hostname")
 
-if ! run_in_machine "$host_ip" test -L "${cfg_flakes}/${flake}.result"; then
+if ! run_in_machine "$host_ip" test -L "${cfg_flakes}/r/${flake}"; then
 	echo "$flake is not built" >&2
 	exit 1
 fi
 
+# Specialized switches for ancient versions
+if run_in_machine "$host_ip" test -e "${cfg_flakes}/cfg/${flake}/switch"; then
+	run_in_machine "$host_ip" test -e "${cfg_flakes}/cfg/${flake}/switch"
+# General switch for modern versions
+else
+	run_in_machine "$host_ip" <<-SSH
+		rm -f /efi/loader/entries/*.conf
+		rm -f /nix/var/nix/profiles/system-*-link
+
+		nix-env -p /nix/var/nix/profiles/system --set "${cfg_flakes}/r/${flake}"
+		"/run/current-system/sw/bin/bootctl" remove
+		"${cfg_flakes}/r/${flake}/sw/bin/bootctl" install
+		"${cfg_flakes}/r/${flake}/bin/switch-to-configuration" boot
+
+		cat >/efi/loader/loader.conf <<EOF
+		timeout 1
+		#console-mode keep
+		EOF
+		SSH
+fi
+
 run_in_machine "$host_ip" <<-SSH
-	nix-env -p /nix/var/nix/profiles/system --set "${cfg_flakes}/${flake}.result"
-	"${cfg_flakes}/${flake}.result/bin/switch-to-configuration" boot
-	"${cfg_flakes}/${flake}.result/sw/bin/bootctl" remove
-	"${cfg_flakes}/${flake}.result/sw/bin/bootctl" install
+	# Sanity check
+	# ‹bootctl list --json=pretty› would be better, but it is not supported
+	# in all version; and even then, its output changes after v251.
+	entries=\$(bootctl list | grep 'linux:' | wc -l)
+
+	if [ \$? -ne 0 ] || [ \$entries -eq 0 ]; then
+		echo "BUG: No bootable Linux found, it is not safe to continue!"
+		exit 1
+	fi
 	SSH
+
+if [ $? -ne 0 ]; then
+	echo "$0: VM commands failed, see above"
+	exit 1
+fi
 
 if [ "$opt_keep" -eq 0 ]; then
 	virsh_cmd shutdown "$cfg_machine" >&2

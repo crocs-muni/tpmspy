@@ -6,14 +6,15 @@
 #
 # This script starts up a VM and prints a list of flakes available.
 #
-# Unless ‹-k› is specified as an option, the script shuts down the VM
-# afterwards.
+# The script tries to preserve the shutdown/running state of the machine. If
+# the machine was running already, the script leaves it be. If the machine had
+# to be started, the script will shut it before it ends. The option ‹-k›
+# instructs the script to keep the machine running in any case.
 
 script_path=$(readlink -f "$0")
 script_bin=$(dirname "${script_path}")
 script_name=$(basename "${script_path}")
 
-. "$script_bin/config"
 . "$script_bin/common"
 
 
@@ -44,13 +45,20 @@ if [ "$#" -ne 0 ]; then
 	exit 1
 fi
 
+if virsh_is_running "$cfg_machine"; then
+	was_running=1
+fi
+
 host_ip=$(virsh_start "$cfg_machine" "$cfg_hostname") >&2
 
-run_in_machine "$host_ip" nix flake metadata "$cfg_flakes" --json \
-	| jq -r '.locks.nodes.root.inputs |keys |.[]' \
-	| sed 's/^nixpkgs-//'
+run_in_machine "$host_ip" nix eval "$cfg_flakes#nixosConfigurations" --apply 'builtins.attrNames' --json \
+	| jq -r '.[]'
 
-if [ "$opt_keep" -eq 0 ]; then
+#run_in_machine "$host_ip" nix flake metadata "$cfg_flakes" --json \
+#	| jq -r '.locks.nodes.root.inputs |keys |.[]' \
+#	| sed 's/^nixpkgs-//'
+
+if [ "$opt_keep" -eq 0 ] && [ ! -z "$was_running" ]; then
 	virsh_cmd shutdown "$cfg_machine" >&2
 	wait_for virsh_is_shutdown "$cfg_machine" >&2
 fi

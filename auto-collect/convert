@@ -2,16 +2,15 @@
 
 # ‹convert› - Convert captured TPMSpy binary dumps to JSON
 #
-# 	convert [-h]
+# 	convert [-h] [DIR]
 #
 # The script takes no arguments. It searches for ‹tpmspy.bin› files in
-# the ‹$cfg_traces_dst› directory and converts them to ‹tpmspy.json›.
+# the ‹DIR› (or ‹$cfg_traces_dst›) directory and converts them to ‹tpmspy.json›.
 
 script_path=$(readlink -f "$0")
 script_bin=$(dirname "${script_path}")
 script_name=$(basename "${script_path}")
 
-. "$script_bin/config"
 . "$script_bin/common"
 
 
@@ -48,24 +47,26 @@ done
 
 shift $((OPTIND - 1))
 
-if [ "$#" -ne 0 ]; then
+if [ "$#" -gt 1 ]; then
 	usage >&2
 	exit 1
 fi
 
-hostname=$(hostname -s)
 dump_bin=$(find_dump)
 
-find "$cfg_traces_dst" -type f -name 'tpmspy.bin' -printf '%P\n' | while read -r source; do
+dir="${1:-$COLLECT_TRACE_DIR}"
+dir="${dir:-$cfg_traces_dst}"
+
+find "$dir" -type f -name 'tpmspy.bin' -printf '%P\n' | while read -r source; do
 	target="${source%.bin}.json"
 
-	if [ ! -f "$cfg_traces_dst/$target" ]; then
+	if [ ! -f "$dir/$target" ]; then
 		echo "$source -> $target"
-		"$dump_bin" --json "$cfg_traces_dst/$source" >"$cfg_traces_dst/$target"
+		"$dump_bin" --json "$dir/$source" >"$dir/$target"
 
-		if [ -f "$cfg_traces_dst/$target" ] && ! [ -s "$cfg_traces_dst/$target" ]; then
-			echo "$cfg_traces_dst/$target: File is empty" >&2
-			unlink "$cfg_traces_dst/$target"
+		if [ -f "$dir/$target" ] && ! [ -s "$dir/$target" ]; then
+			echo "$dir/$target: File is empty" >&2
+			unlink "$dir/$target"
 		fi
 	fi
 done

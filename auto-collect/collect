@@ -2,7 +2,7 @@
 
 # ‹collect› -- Collect a number of samples from a virtual machine.
 #
-# 	collect [-h] [-n] FLAKE N
+# 	collect [-h] [-o DIR] FLAKE N [MACHINE HOSTNAME]
 #
 # This script collects ‹N› samples by repeating this procedure:
 #   - Start the VM.
@@ -15,40 +15,43 @@
 #
 # The results are stored as separate directories in the format
 #
-# 	$cfg_traces_dst/$FLAKE/$SEQ_N
+# 	$cfg_traces_dst/$FLAKE/$STAMP
 #
-# where ‹$SEQ_N› is a zero-filled numbers from 0 to ‹$N -1›. For example,
-# N=250 creates directories 000, 001, 002 up to 249.
-#
-# If ‹-n› is specified, existing ‹$SEQ_N› measures are skipped. This can
-# be used to delete corrupted measurements and re-measure missing ones.
+# where ‹$STAMP› is a date and time of the format 'YYMMDD.HHMMSS.NNNN'.
+# If the directory exists (unlikely, but theoretically possible when two
+# scripts run ‹date› at exactly the same time), the script fails.
 #
 # The ‹FLAKE› argument is used only for storing the results into an appropriate
 # directory. Use ‹switch $FLAKE› script to actually switch a system to a given
 # flake.
+#
+# To collect data from different machines, one may use ‹MACHINE› and ‹HOSTNAME›
+# as optional arguments. In addition, ‹-o DIR› can be specified to override
+# ‹$cfg_traces_dst› directory path from ‹config› file.
 
 script_path=$(readlink -f "$0")
 script_bin=$(dirname "${script_path}")
 script_name=$(basename "${script_path}")
 
-. "$script_bin/config"
 . "$script_bin/common"
 
 
 usage() {
-	echo "usage: $script_name [-n] FLAKE N" >&2
+	echo "usage: $script_name [-o DIR] FLAKE N [MACHINE HOSTNAME]" >&2
 }
 
-opt_new=
-while getopts "hn" option; do
+opt_target_dir=
+while getopts "hno:" option; do
 	case "${option}" in
 	h)
 		usage
 		exit 0
 		;;
-	n)
-		opt_new=1
+
+	o)
+		opt_target_dir="$OPTARG"
 		;;
+
 	*)
 		usage >&2
 		exit 1
@@ -57,62 +60,25 @@ done
 
 shift $((OPTIND - 1))
 
-if [ "$#" -ne 2 ]; then
+if [ "$#" -ne 2 ] && [ "$#" -ne 4 ]; then
 	usage >&2
 	exit 1
 fi
 
 flake="$1"
 count="$2"
-	
-target_dir="$cfg_traces_dst/$flake"
+p_machine="${3:-$cfg_machine}"
+p_hostname="${4:-$cfg_hostname}"
+
+target_dir="${opt_target_dir:-$cfg_traces_dst}"/"$flake"
 mkdir -p "$target_dir"
 
 for trace_no in $(seq -w 0 "$((count - 1))"); do
-	if [ -d "$target_dir/$trace_no" ]; then
-		if [ -z "$opt_new" ]; then
-			die "Trace $trace_no: Directory exists"
-		fi
+	stamp="$(date '+%y%m%d.%H%M%S.%3N')"
 
-		echo "Trace $trace_no: Directory exists, skipping"
-		continue
-	elif ! mkdir "$target_dir/$trace_no"; then
-		die "Trace $trace_no: Failed to create output directory"
+	if ! mkdir "$target_dir/$stamp"; then
+		die "Trace $trace_no: $stamp: Failed to create output directory"
 	fi
 
-	host_ip=$(virsh_start "$cfg_machine" "$cfg_hostname")
-	systemd_version=$(run_in_machine "$host_ip" systemctl --version | head -n1| sed 's!systemd \([0-9]\+\).*!systemd-\1!')
-
-	if [ -z "$systemd_version" ]; then
-		die "Trace $trace_no: Cannot retreive systemd version"
-	fi
-
-	_pwd=$(pwd)
-	cd "$target_dir/$trace_no" || die "cd $target_dir/$trace_no"
-	run_in_machine "$host_ip" uname -r >uname.txt
-	run_in_machine "$host_ip" bootctl >bootctl.txt
-	run_in_machine "$host_ip" systemctl --version >systemd.txt
-	run_in_machine "$host_ip" systemd-analyze pcrs >systemd-pcrs.txt
-	run_in_machine "$host_ip" tpm2_eventlog /sys/kernel/security/tpm0/binary_bios_measurements >tpm2-eventlog.txt
-
-	tpmspy_dir=$(find "$cfg_tpmspy_dir" -maxdepth 1 -type d -name 'tpmspy-*' -printf '%T@ %p\n' \
-		| sort -nr | head -n1 | cut -d' ' -f2)
-
-	# Shut down the machine before attempting to copy the captured packets.
-	# TPMSpy will also flush and close the file.
-	virsh_cmd shutdown "$cfg_machine"
-	wait_for virsh_is_shutdown "$cfg_machine"
-
-	cp "$tpmspy_dir"/tpmspy.log tpmspy.log
-	cp "$tpmspy_dir"/swtpm.log swtpm.log
-
-	if [ $(ls "$tpmspy_dir"/packets-*.bin | wc -l) -ne 1 ]; then
-		echo "collect: Unique packets-01.bin not found, copying all to be sure" >&2
-		cp "$tpmspy_dir"/packets-*.bin .
-	else
-		cp "$tpmspy_dir"/packets-*.bin tpmspy.bin
-	fi
-
-	cd "$_pwd" || die "cd $_pwd"
-	unset _pwd
+	"$script_bin"/collect1 -o "$target_dir/$stamp" "$p_machine" "$p_hostname"
 done

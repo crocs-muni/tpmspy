@@ -1,0 +1,129 @@
+#!/bin/sh
+
+# ‹collect1› -- Collect a sample from a virtual machine.
+#
+# 	collect1 -o DIR [MACHINE HOSTNAME]
+#
+# Ensure the VM is powered off before running this script to ensure complete
+# trace. The VM will be started automatically and shut off during the process
+# of this script. There is no option to prevent shutdown -- to gather complete
+# data from TPMSpy, the QEMU-swTPM link must be closed so that TPMSpy flushes
+# all packets and exits.
+#
+# The results is stored in ‹DIR›. This directory must exist and be empty.
+
+script_path=$(readlink -f "$0")
+script_bin=$(dirname "${script_path}")
+script_name=$(basename "${script_path}")
+
+. "$script_bin/common"
+
+
+usage() {
+	echo "usage: $script_name -o DIR [MACHINE HOSTNAME]" >&2
+}
+
+opt_target_dir=
+while getopts "hno:" option; do
+	case "${option}" in
+	h)
+		usage
+		exit 0
+		;;
+
+	o)
+		opt_target_dir="$OPTARG"
+		;;
+
+	*)
+		usage >&2
+		exit 1
+	esac
+done
+
+shift $((OPTIND - 1))
+
+if { [ "$#" -ne 0 ] && [ "$#" -ne 2 ]; } || [ -z "$opt_target_dir" ]; then
+	usage >&2
+	exit 1
+fi
+
+p_machine="${1:-$cfg_machine}"
+p_hostname="${2:-$cfg_hostname}"
+
+target_dir="${opt_target_dir}"
+
+extract_from_vm() {
+	ip="$1"
+	name="$2"
+	shift 2
+
+	run_in_machine "$ip" "$@" >"$name" 2>"$name.err"
+}
+
+if test -e "$script_bin/pause"; then
+	echo "Pause file detected; remove it to continue"
+	while test -e "$script_bin/pause"; do
+		sleep 30
+	done
+fi
+
+if virsh_is_running "$p_machine"; then
+	die "$p_machine is running"
+fi
+
+host_ip=$(virsh_start "$p_machine" "$p_hostname")
+systemd_version=$(run_in_machine "$host_ip" systemctl --version | head -n1| sed 's!systemd \([0-9]\+\).*!systemd-\1!')
+
+if [ -z "$systemd_version" ]; then
+	die "Cannot retreive systemd version"
+fi
+
+_pwd=$(pwd)
+cd "$target_dir" || die "cd $target_dir"
+extract_from_vm "$host_ip" uname.txt uname -r
+extract_from_vm "$host_ip" bootctl.txt bootctl
+extract_from_vm "$host_ip" systemd-version.txt systemctl --version
+extract_from_vm "$host_ip" systemd-pcrs.txt systemd-analyze pcrs
+extract_from_vm "$host_ip" tpm2-log-platform.txt tpm2_eventlog /sys/kernel/security/tpm0/binary_bios_measurements
+extract_from_vm "$host_ip" tpm2-log-systemd.txt cat /run/log/systemd/tpm2-measure.log
+
+# The following are not used for the experiments directly, but data shows that
+# around 10% of runs are consistently delayed by ~20 seconds. This may show us
+# why.
+extract_from_vm "$host_ip" systemd-blame.txt systemd-analyze blame
+extract_from_vm "$host_ip" journal.json journalctl --boot 0 --output=json
+extract_from_vm "$host_ip" journal.txt journalctl --boot 0
+
+# Remove empty files
+for file in *; do
+	if [ -f "$file" ] && [ ! -s "$file" ]; then
+		if ! str_ends_with "$file" ".err"; then
+			echo "$file: Empty file"
+			echo "$file" >>empty
+		fi
+
+		unlink "$file"
+	fi
+done
+
+tpmspy_dir=$(find "$cfg_tpmspy_dir" -maxdepth 1 -type d -name 'tpmspy-*' -printf '%T@ %p\n' \
+	| sort -nr | head -n1 | cut -d' ' -f2)
+
+# Shut down the machine before attempting to copy the captured packets.
+# TPMSpy will also flush and close the file.
+virsh_cmd shutdown "$p_machine"
+wait_for virsh_is_shutdown "$p_machine"
+
+cp "$tpmspy_dir"/tpmspy.log tpmspy.log
+cp "$tpmspy_dir"/swtpm.log swtpm.log
+
+if [ "$(find "$tpmspy_dir" -maxdepth 1 -name "packets-*.bin" | wc -l)" -eq 1 ]; then
+	cp "$tpmspy_dir"/packets-*.bin tpmspy.bin
+else
+	echo "collect: Unique packets-01.bin not found, copying all to be sure" >&2
+	cp "$tpmspy_dir"/packets-*.bin .
+fi
+
+cd "$_pwd" || die "cd $_pwd"
+unset _pwd

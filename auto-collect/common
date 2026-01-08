@@ -1,8 +1,12 @@
 #!/bin/sh
 
 die() {
-	echo "$@" >&2
+	echo "$script_name: $*" >&2
 	exit 1
+}
+
+str_ends_with() {
+	test "${1%"$2"}" != "$1"
 }
 
 virsh_cmd() {
@@ -11,6 +15,10 @@ virsh_cmd() {
 
 virsh_get_ip() {
 	virsh_cmd net-dhcp-leases default | grep "${1:-$cfg_hostname}" | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+'
+}
+
+virsh_is_running() {
+	virsh_cmd list --all | grep -qF "${1:-$cfg_machine}" | grep -qF 'running'
 }
 
 virsh_is_shutdown() {

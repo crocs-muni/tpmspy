@@ -2,7 +2,7 @@
 
 # ‹experiment› -- Manage overall workflow of capturing TPMSpy data
 #
-# 	experiment [-h] [-n] [N]
+# 	experiment [-h] [-q] [N]
 #
 # This script calls other scripts in this directory to collect data:
 #
@@ -13,22 +13,33 @@
 #     ◦ Collect ‹$N› datapoints (see ‹collect›).
 #  4. Convert all ‹tpmspy.bin› to ‹tpmspy.json› (see ‹convert›).
 #
-#  If ‹-n› option is provided, directories for existing flakes are skipped.
-#  This can be used to delete corrupted measurements and re-capture only the
-#  missing ones. This argument is also passed to ‹collect›.
+# If ‹N› is not specified, ‹$cfg_default_captures› is used instead.
 #
-#  If ‹N› is not specified, ‹$cfg_default_captures› is used instead.
+# By default, ‹tput bel› is executed at the end of the script, which causes
+# the terminal bell. Use ‹-q› to run quietly.
 
 script_path=$(readlink -f "$0")
 script_bin=$(dirname "${script_path}")
 script_name=$(basename "${script_path}")
 
-. "$script_bin/config"
+if [ -n "$COLLECT_CONFIG" ]; then
+	echo "export COLLECT_CONFIG=$COLLECT_CONFIG"
+	export COLLECT_CONFIG
+fi
+
 . "$script_bin/common"
 
 
 usage() {
 	echo "usage: ${script_name} [-n]"
+}
+
+cmd() {
+	printf "\033[93mVM\$\033[0m \033[1m%s\033[0m\n" "$*"
+	if ! "$@"; then
+		printf "\033[93m ×  \033[0m \033[1m%s\033[0m\n" "$*"
+		exit 1
+	fi
 }
 
 opt_new=
@@ -55,21 +66,25 @@ if [ "$#" -gt 1 ]; then
 fi
 
 count="${1:-$cfg_default_captures}"
+traces_dst="${cfg_traces_dst}"
+
+printf "\x1b[96m ** \x1b[0m \x1b[1m%s\x1b[0m\n" "Setting up flakes"
 flakes=$("$script_bin"/flakes -k)
 
 "$script_bin/setup" -k $flakes
 
 for flake in $flakes; do
-	# Commented out: We need to reinspect all captures, we cannot skip
-	# existing flake directories just like that.
-	#if [ -d "$cfg_traces_dst/$flake" ] && [ "$opt_new" -eq 1 ]; then
-	#	printf "\x1b[38m # \x1b[0m \x1b[1m%s\x1b[0m\n" "$flake"
-	#	continue
-	#fi
+	printf "\x1b[33m ~> \x1b[0m Switch \x1b[1m%s\x1b[0m\n" "$flake"
+	cmd "$script_bin/switch" "$flake"
 
-	printf "\x1b[33m * \x1b[0m \x1b[1m%s\x1b[0m\n" "$flake"
-	"$script_bin/switch" "$flake"
-	"$script_bin/collect" ${opt_new:+-n} "$flake" "$count"
+	printf "\x1b[33m |> \x1b[0m Collect \x1b[1m%s\x1b[0m\n" "$flake"
+	cmd "$script_bin/collect" -o "$traces_dst" "$flake" "$count"
+
+	printf "\x1b[33m ~> \x1b[0m Revert to \x1b[1mdefault\x1b[0m profile\n"
+	cmd "$script_bin/restore"
 done
 
-"$script_bin/convert"
+printf "\x1b[33m ** \x1b[0m Switch \x1b[1m%s\x1b[0m\n" "Convert TPMSpy traces"
+cmd "$script_bin/convert" "$traces_dst"
+
+[ "$opt_bel" -eq 1 ] && tput bel

@@ -2,13 +2,15 @@
 
 # ‹setup› -- Build selected flakes
 #
-# 	setup [-h] [-k] FLAKES…
+# 	setup [-h] [-k] [-f] FLAKES…
 #
 # For one or more flakes given as ‹FLAKES…›, the script starts up the VM
 # and rebuilds the configuration for each flake if not available.
 #
-# Unless ‹-k› is specified as an option, the script shuts down the VM
-# afterwards.
+# The script tries to preserve the shutdown/running state of the machine. If
+# the machine was running already, the script leaves it be. If the machine had
+# to be started, the script will shut it before it ends. The option ‹-k›
+# instructs the script to keep the machine running in any case.
 #
 # Note that this script requires Nix Flakes feature to be available in the
 # system running in the VM. Thus it is best to ensure that the system is
@@ -19,7 +21,6 @@ script_path=$(readlink -f "$0")
 script_bin=$(dirname "${script_path}")
 script_name=$(basename "${script_path}")
 
-. "$script_bin/config"
 . "$script_bin/common"
 
 
@@ -50,14 +51,17 @@ if [ "$#" -lt "1" ]; then
 	exit 1
 fi
 
+if virsh_is_running "$cfg_machine"; then
+	was_running=1
+fi
+
 host_ip=$(virsh_start "$cfg_machine" "$cfg_hostname")
 
 for flake in "$@"; do
 	run_in_machine "$host_ip" <<-SSH
 		cd "${cfg_flakes}"
-		if [ -L "${flake}.result" ]; then
-			exit 0
-		fi
+		[ ! -d r ] && mkdir r
+		[ -L "r/${flake}" ] && exit 0
 
 		nixos-rebuild build --flake ".#${flake}"
 
@@ -66,12 +70,13 @@ for flake in "$@"; do
 			exit 1
 		fi
 
-		mv -T result "${flake}.result"
+		mv -T result "r/${flake}"
+		ln -nsf "${cfg_flakes}/r/${flake}" /nix/var/nix/gcroots/auto/"${flake}"
 		SSH
 
 done
 
-if [ "$opt_keep" -eq 0 ]; then
+if [ "$opt_keep" -eq 0 ] && [ ! -z "$was_running" ]; then
 	virsh_cmd shutdown "$cfg_machine" >&2
 	wait_for virsh_is_shutdown "$cfg_machine" >&2
 fi
