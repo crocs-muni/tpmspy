@@ -19,7 +19,7 @@ usage() {
 }
 
 find_dump() {
-	for candidate in "$script_bin/../build/dump/dump"; do
+	for candidate in "$script_bin/../tpmspy/build/dump/dump"; do
 		if [ -x "$candidate" ]; then
 			echo "$candidate"
 			return
