@@ -2,8 +2,8 @@
 *.swp
 
 # Build and distribution directory
-/build/
-/dist/
+/tpmspy/build/
+/tpmspy/dist/
 
 # Do not store private keys.
 /auto-collect/ssh/
@@ -13,7 +13,7 @@
 /data/
 
 # Compile commands
-compile_commands.json
+/tpmspy/compile_commands.json
 
 # Caches
 /.cache/
