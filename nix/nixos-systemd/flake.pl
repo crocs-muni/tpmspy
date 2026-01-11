@@ -1,5 +1,9 @@
 #!/usr/bin/perl
 
+use v5.40;
+use open ':std', ':encoding(utf-8)';
+
+
 =encoding utf-8
 
 =head1 NAME
@@ -11,10 +15,6 @@ C<flake.pl> -- Generate flake.nix for various systemd versions
 	flake.pl systemd.tmpl systemd.cfg | tee flake.nix
 
 =cut
-
-
-use v5.40;
-use open ':std', ':encoding(utf-8)';
 
 
 use Text::Xslate;
