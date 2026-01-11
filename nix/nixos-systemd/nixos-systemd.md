@@ -2,7 +2,7 @@
 
 ## Setup
 
-- In libvirt, create a VM called `nixos-systemd` with 256 G disk.
+- In libvirt, create a VM called `nixos-systemd.vm` with 256 G disk.
 - Add a software TPM.
 - Add NixOS ISO as CD-ROM and start the VM.
 

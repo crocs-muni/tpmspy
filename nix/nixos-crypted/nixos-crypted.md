@@ -2,10 +2,11 @@
 
 ## Setup
 
-- Create a VM, 256 G disk
-- Add NixOS ISO as CD-ROM and boot
+- In libvirt, create a VM called `nixos-crypted.vm` with 256 G disk.
+- Add a software TPM.
+- Add NixOS ISO as CD-ROM and start the VM.
 
-- Configure disks:
+- When you get NixOS terminal, configure disks:
 
   ```sh
   nixos$ sudo -s
