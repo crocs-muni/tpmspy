@@ -54,10 +54,6 @@ host_ip=$(virsh_start "$cfg_machine" "$cfg_hostname") >&2
 run_in_machine "$host_ip" nix eval "$cfg_flakes#nixosConfigurations" --apply 'builtins.attrNames' --json \
 	| jq -r '.[]'
 
-#run_in_machine "$host_ip" nix flake metadata "$cfg_flakes" --json \
-#	| jq -r '.locks.nodes.root.inputs |keys |.[]' \
-#	| sed 's/^nixpkgs-//'
-
 if [ "$opt_keep" -eq 0 ] && [ ! -z "$was_running" ]; then
 	virsh_cmd shutdown "$cfg_machine" >&2
 	wait_for virsh_is_shutdown "$cfg_machine" >&2
