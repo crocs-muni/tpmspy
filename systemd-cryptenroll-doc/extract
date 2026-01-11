@@ -46,7 +46,7 @@ GetOptions($::OPTIONS, qw{
 	file|f=s
 }) or exit 1;
 
-die "usage: $0 [--all] [--ref START-REF] SYSTEMD-GIT-PATH\n"
+die "usage: $0 [--all] [--from FIRST-REF] [--to LAST-REF] [--file TEMPLATE] SYSTEMD-GIT-PATH\n"
 	unless @ARGV == 1;
 
 my ($repo) = @ARGV;
