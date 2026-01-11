@@ -1,0 +1,65 @@
+System:
+      Firmware: UEFI 2.70 (EDK II 1.00)
+ Firmware Arch: x64
+   Secure Boot: disabled (setup)
+  TPM2 Support: yes
+  Measured UKI: no
+  Boot into FW: supported
+
+Current Boot Loader:
+       Product: systemd-boot 258.1
+     Features: ✓ Boot counting
+               ✓ Menu timeout control
+               ✓ One-shot menu timeout control
+               ✓ Default entry control
+               ✓ One-shot entry control
+               ✓ Support for XBOOTLDR partition
+               ✓ Support for passing random seed to OS
+               ✓ Load drop-in drivers
+               ✓ Support Type #1 sort-key field
+               ✓ Support @saved pseudo-entry
+               ✓ Support Type #1 devicetree field
+               ✓ Enroll SecureBoot keys
+               ✓ Retain SHIM protocols
+               ✓ Menu can be disabled
+               ✓ Multi-Profile UKIs are supported
+               ✓ Loader reports network boot URL
+               ✓ Support Type #1 uki field
+               ✓ Support Type #1 uki-url field
+               ✓ Loader reports TPM2 active PCR banks
+     Partition: /dev/disk/by-partuuid/482f5544-acfc-4c95-86ac-958b12fa1c57
+        Loader: └─/efi//EFI/systemd/systemd-bootx64.efi
+ Current Entry: nixos-generation-1.conf
+
+Random Seed:
+ System Token: set
+       Exists: yes
+
+Available Boot Loaders on ESP:
+          ESP: /efi (/dev/disk/by-partuuid/482f5544-acfc-4c95-86ac-958b12fa1c57)
+         File: ├─/efi//EFI/systemd/systemd-bootx64.efi (systemd-boot 258.1)
+               └─/efi//EFI/BOOT/BOOTX64.EFI (systemd-boot 258.1)
+
+Boot Loaders Listed in EFI Variables:
+        Title: Linux Boot Manager
+           ID: 0x0002
+       Status: active, boot-order
+    Partition: /dev/disk/by-partuuid/482f5544-acfc-4c95-86ac-958b12fa1c57
+         File: └─/efi//EFI/systemd/systemd-bootx64.efi
+
+Boot Loader Entry Locations:
+          ESP: /efi (/dev/disk/by-partuuid/482f5544-acfc-4c95-86ac-958b12fa1c57, $BOOT)
+       config: /efi//loader/loader.conf
+        token: nixos
+
+Default Boot Loader Entry:
+         type: Boot Loader Specification Type #1 (.conf)
+        title: NixOS
+           id: nixos-generation-1.conf
+       source: /efi//loader/entries/nixos-generation-1.conf (on the EFI System Partition)
+     sort-key: nixos
+      version: Generation 1 NixOS Xantusia 25.11.20251020.8461a64 (Linux 6.12.53), built on 2025-12-30
+   machine-id: d9df4a2f002243b3bb23b2d1b9767068
+        linux: /efi//EFI/nixos/gr6i6jdgy0vmg1ijz3h9cj4lzxagw16b-linux-6.12.53-bzImage.efi
+       initrd: /efi//EFI/nixos/r4n93gxvk376ggh7g3hdd225f8jd9w08-initrd-linux-6.12.53-initrd.efi
+      options: init=/nix/store/9hydcx2jrj5gma1dii7nhkgbcyw3ww79-nixos-system-nixos-systemd-25.11.20251020.8461a64/init loglevel=4 lsm=landlock,yama,bpf

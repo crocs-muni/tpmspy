@@ -1,0 +1,50 @@
+System:
+     Firmware: UEFI 2.70 (EDK II 1.00)
+  Secure Boot: disabled (setup)
+ TPM2 Support: yes
+ Boot into FW: supported
+
+Current Boot Loader:
+      Product: systemd-boot 251.3
+     Features: ✓ Boot counting
+               ✓ Menu timeout control
+               ✓ One-shot menu timeout control
+               ✓ Default entry control
+               ✓ One-shot entry control
+               ✓ Support for XBOOTLDR partition
+               ✓ Support for passing random seed to OS
+               ✓ Load drop-in drivers
+               ✓ Boot loader sets ESP information
+          ESP: /dev/disk/by-partuuid/482f5544-acfc-4c95-86ac-958b12fa1c57
+         File: └─/EFI/systemd/systemd-bootx64.efi
+
+Random Seed:
+ Passed to OS: no
+ System Token: not set
+       Exists: yes
+
+Available Boot Loaders on ESP:
+          ESP: /efi (/dev/disk/by-partuuid/482f5544-acfc-4c95-86ac-958b12fa1c57)
+         File: └─/EFI/systemd/systemd-bootx64.efi (systemd-boot 251.3)
+         File: └─/EFI/BOOT/BOOTX64.EFI (systemd-boot 251.3)
+
+Boot Loaders Listed in EFI Variables:
+        Title: Linux Boot Manager
+           ID: 0x0002
+       Status: active, boot-order
+    Partition: /dev/disk/by-partuuid/482f5544-acfc-4c95-86ac-958b12fa1c57
+         File: └─/EFI/systemd/systemd-bootx64.efi
+
+Boot Loader Entries:
+        $BOOT: /efi (/dev/disk/by-partuuid/482f5544-acfc-4c95-86ac-958b12fa1c57)
+
+Default Boot Loader Entry:
+         type: Boot Loader Specification Type #1 (.conf)
+        title: NixOS
+           id: nixos-generation-1.conf
+       source: /efi/loader/entries/nixos-generation-1.conf
+      version: Generation 1 NixOS 22.11.20220817.8e36f0c, Linux Kernel 5.15.60, Built on 2025-12-30
+   machine-id: d9df4a2f002243b3bb23b2d1b9767068
+        linux: /efi/nixos/sada8k5mg3f70lnnc2pxifvqchjg3v2r-linux-5.15.60-bzImage.efi
+       initrd: /efi/nixos/gcg355kgn1jk74861m2mck6vz38y1ap3-initrd-linux-5.15.60-initrd.efi
+      options: init=/nix/store/gr401kh1a825ic0fcgdk8r2h1yqij0p1-nixos-system-nixos-systemd-22.11.20220817.8e36f0c/init loglevel=4

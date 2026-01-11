@@ -1,0 +1,25 @@
+NR NAME                SHA256
+ 0 platform-code       598b6c3e37122c4c4ce6f5dfc7888cf7c86c28e8ae2eeb7cd3748f1d0b929109
+ 1 platform-config     c59f8450701ce3865ffcf2d06bb07714d76a105683b0ca2fa3096f8370dd3557
+ 2 external-code       0c086a8ba21bf3cbeee845770a92c2131a00e79a981b035cb65407e97f5a870c
+ 3 external-config     3d458cfe55cc03ea1f443f1562beec8df51c75e14a9fcf9a7234a13f198e7969
+ 4 boot-loader-code    349ed12dc884c5bca5196ecc12e6e2ce9e48f31a386e1332f1543529e33bef25
+ 5 boot-loader-config  9a98198f79192465b8f7a2e44c23f60117089ae5b3165c3e495ce18aeb5a0b94
+ 6 host-platform       3d458cfe55cc03ea1f443f1562beec8df51c75e14a9fcf9a7234a13f198e7969
+ 7 secure-boot-policy  65caf8dd1e0ea7a6347b635d2b379c93b9a1351edc2afc3ecda700e534eb3068
+ 8 -                   0000000000000000000000000000000000000000000000000000000000000000
+ 9 kernel-initrd       4d05e65d297320edafc6a4ace4bde1287a8fe3e559be04f2096abfa58c8a4404
+10 ima                 0000000000000000000000000000000000000000000000000000000000000000
+11 kernel-boot         39b2b4598dc7b45ed709976034bc825279353cc5de4651310f2963df94abd133
+12 kernel-config       0000000000000000000000000000000000000000000000000000000000000000
+13 sysexts             0000000000000000000000000000000000000000000000000000000000000000
+14 shim-policy         0000000000000000000000000000000000000000000000000000000000000000
+15 system-identity     0000000000000000000000000000000000000000000000000000000000000000
+16 debug               0000000000000000000000000000000000000000000000000000000000000000
+17 -                   ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+18 -                   ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+19 -                   ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+20 -                   ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+21 -                   ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+22 -                   ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+23 application-support 0000000000000000000000000000000000000000000000000000000000000000

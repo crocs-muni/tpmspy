@@ -1,0 +1,1 @@
+{"pcr":15,"digests":[{"hashAlg":"sha256","digest":"034ab1d5c68159c19673212ade0935e619811d172489389d93781e6643d35646"}],"content_type":"systemd","content":{"string":"cryptsetup:chamber:49854b41-fe14-47ee-a7e6-fa6c5c2e41f5","bootId":"259b1f68b4e14f92a379e33c14cd0140","timestamp":3083473,"eventType":"volume-key"}}

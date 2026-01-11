@@ -1,0 +1,1626 @@
+** Client connected
+   Server fd 3, type 104 "qemu server"
+   Link end 1: fd 7, type 102 "qemu client"
+# trace sinks_dup() 1 -> 2
+   Link end 2: fd 9, type 202 "swtpm client"
+** Message captured
+   Source fd 7, type 102 "qemu client"
+   Destination fd 9, type 202 "swtpm client"
+   New link passed via ancillary messages
+     End 1: fd 10 via fd 7
+# trace sinks_dup() 2 -> 3
+# trace sinks_dup() 3 -> 4
+     End 2: fd 11 via fd 9
+       (From socketpair [11, 12])
+   Transferred 4 B in total
+** Message captured
+   Source fd 9, type 202 "swtpm client"
+   Destination fd 7, type 102 "qemu client"
+   Transferred 4 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 10 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 10 B in total
+** Message captured
+   Source fd 7, type 102 "qemu client"
+   Destination fd 9, type 202 "swtpm client"
+   Transferred 4 B in total
+** Message captured
+   Source fd 9, type 202 "swtpm client"
+   Destination fd 7, type 102 "qemu client"
+   Transferred 8 B in total
+** Message captured
+   Source fd 7, type 102 "qemu client"
+   Destination fd 9, type 202 "swtpm client"
+   Transferred 4 B in total
+** Message captured
+   Source fd 9, type 202 "swtpm client"
+   Destination fd 7, type 102 "qemu client"
+   Transferred 4 B in total
+** Message captured
+   Source fd 7, type 102 "qemu client"
+   Destination fd 9, type 202 "swtpm client"
+   Transferred 8 B in total
+** Message captured
+   Source fd 9, type 202 "swtpm client"
+   Destination fd 7, type 102 "qemu client"
+   Transferred 16 B in total
+** Message captured
+   Source fd 7, type 102 "qemu client"
+   Destination fd 9, type 202 "swtpm client"
+   Transferred 4 B in total
+** Message captured
+   Source fd 9, type 202 "swtpm client"
+   Destination fd 7, type 102 "qemu client"
+   Transferred 4 B in total
+** Message captured
+   Source fd 7, type 102 "qemu client"
+   Destination fd 9, type 202 "swtpm client"
+   Transferred 8 B in total
+** Message captured
+   Source fd 9, type 202 "swtpm client"
+   Destination fd 7, type 102 "qemu client"
+   Transferred 16 B in total
+** Message captured
+   Source fd 7, type 102 "qemu client"
+   Destination fd 9, type 202 "swtpm client"
+   Transferred 8 B in total
+** Message captured
+   Source fd 9, type 202 "swtpm client"
+   Destination fd 7, type 102 "qemu client"
+   Transferred 4 B in total
+** Message captured
+   Source fd 7, type 102 "qemu client"
+   Destination fd 9, type 202 "swtpm client"
+   Transferred 4 B in total
+** Message captured
+   Source fd 9, type 202 "swtpm client"
+   Destination fd 7, type 102 "qemu client"
+   Transferred 8 B in total
+** Message captured
+   Source fd 7, type 102 "qemu client"
+   Destination fd 9, type 202 "swtpm client"
+   Transferred 8 B in total
+** Message captured
+   Source fd 9, type 202 "swtpm client"
+   Destination fd 7, type 102 "qemu client"
+   Transferred 4 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 12 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 10 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 11 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 10 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 20 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 62 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 203 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 19 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 20 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 62 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 203 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 19 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 20 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 62 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 203 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 19 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 20 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 62 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 27 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 27 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 27 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 27 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 27 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 203 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 19 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 20 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 62 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 203 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 19 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 20 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 62 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 203 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 19 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 20 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 62 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 203 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 19 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 20 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 62 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 203 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 19 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 20 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 62 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 203 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 19 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 20 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 62 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 23 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 203 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 19 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 20 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 62 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 203 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 19 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 20 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 62 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 203 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 19 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 20 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 62 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 203 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 19 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 20 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 62 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 93 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 19 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 203 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 19 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 20 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 62 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 203 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 19 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 20 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 62 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 203 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 19 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 20 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 62 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 203 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 19 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 20 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 62 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 203 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 19 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 20 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 62 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 203 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 19 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 20 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 62 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 203 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 19 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 20 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 62 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 203 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 19 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 20 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 62 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 203 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 19 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 20 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 62 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 203 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 19 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 20 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 62 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 203 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 19 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 20 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 62 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 203 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 19 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 20 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 62 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 203 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 19 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 20 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 62 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 203 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 19 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 20 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 62 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 203 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 19 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 20 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 62 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 203 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 19 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 20 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 62 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 203 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 19 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 20 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 62 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 203 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 19 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 20 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 62 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 203 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 19 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 20 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 62 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 203 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 19 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 20 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 62 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 203 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 19 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 20 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 62 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 203 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 19 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 20 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 62 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 11 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 10 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 27 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 475 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 67 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 314 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 14 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 409 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 14 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 10 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 22 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 43 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 20 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 62 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 20 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 62 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 20 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 62 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 20 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 62 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 20 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 62 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 20 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 62 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 20 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 62 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 20 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 62 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 20 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 62 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 20 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 62 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 20 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 62 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 20 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 62 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 20 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 62 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 20 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 62 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 20 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 62 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 20 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 62 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 20 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 62 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 20 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 62 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 20 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 62 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 20 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 62 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 20 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 62 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 20 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 62 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 20 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 62 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 20 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 62 B in total
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 12 B in total
+** Message captured
+   Source fd 11, type 208 "swtpm link"
+   Destination fd 10, type 108 "qemu link"
+   Transferred 10 B in total
+** Message captured
+   Source fd 7, type 102 "qemu client"
+   Destination fd 9, type 202 "swtpm client"
+   Transferred 4 B in total
+** Message captured
+   Source fd 9, type 202 "swtpm client"
+   Destination fd 7, type 102 "qemu client"
+   Transferred 4 B in total
+fd 9: End of file
+   Dropping link between fd 7 and fd 9
+   Closing fd 9
+# trace context_remove_socket() Closing socket type=514, fd=9
+# trace sinks_close() 4 -> 3
+   Closing fd 7
+# trace context_remove_socket() Closing socket type=258, fd=7
+# trace sinks_close() 3 -> 2
+** Message captured
+   Source fd 10, type 108 "qemu link"
+   Destination fd 11, type 208 "swtpm link"
+   Transferred 0 B in total
+fd 10: End of file
+   Dropping link between fd 10 and fd 11
+   Closing fd 10
+# trace context_remove_socket() Closing socket type=264, fd=10
+# trace sinks_close() 2 -> 1
+   Closing fd 11
+# trace context_remove_socket() Closing socket type=520, fd=11
+# trace sinks_close() 1 -> 0
+# trace sinks_close() Cleaning up
+No sockets left, quitting
+# trace context_remove_socket() Closing socket type=260, fd=3

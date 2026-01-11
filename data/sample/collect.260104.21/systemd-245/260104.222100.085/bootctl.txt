@@ -1,0 +1,47 @@
+System:
+     Firmware: UEFI 2.70 (EDK II 1.00)
+  Secure Boot: disabled
+   Setup Mode: setup
+
+Current Boot Loader:
+      Product: systemd-boot 245
+     Features: ✓ Boot counting
+               ✓ Menu timeout control
+               ✓ One-shot menu timeout control
+               ✓ Default entry control
+               ✓ One-shot entry control
+               ✓ Support for XBOOTLDR partition
+               ✓ Support for passing random seed to OS
+               ✓ Boot loader sets ESP partition information
+          ESP: /dev/disk/by-partuuid/482f5544-acfc-4c95-86ac-958b12fa1c57
+         File: └─/EFI/systemd/systemd-bootx64.efi
+
+Random Seed:
+ Passed to OS: no
+ System Token: not set
+       Exists: yes
+
+Available Boot Loaders on ESP:
+          ESP: /efi (/dev/disk/by-partuuid/482f5544-acfc-4c95-86ac-958b12fa1c57)
+         File: └─/EFI/systemd/systemd-bootx64.efi (systemd-boot 245)
+         File: └─/EFI/BOOT/BOOTX64.EFI (systemd-boot 245)
+
+Boot Loaders Listed in EFI Variables:
+        Title: Linux Boot Manager
+           ID: 0x0002
+       Status: active, boot-order
+    Partition: /dev/disk/by-partuuid/482f5544-acfc-4c95-86ac-958b12fa1c57
+         File: └─/EFI/systemd/systemd-bootx64.efi
+
+Boot Loader Entries:
+        $BOOT: /efi (/dev/disk/by-partuuid/482f5544-acfc-4c95-86ac-958b12fa1c57)
+
+Default Boot Loader Entry:
+        title: NixOS
+           id: nixos-generation-1.conf
+       source: /efi/loader/entries/nixos-generation-1.conf
+      version: Generation 1 NixOS 20.09pre-git, Linux Kernel 5.4.43, Built on 2025-12-31
+   machine-id: d9df4a2f002243b3bb23b2d1b9767068
+        linux: /efi/nixos/ynrb5bdwfm935gfcqcd7pjhgj2scpjar-linux-5.4.43-bzImage.efi
+       initrd: /efi/nixos/iw1x2ag1icghk7zh5q4lp20i5jf9d7bc-initrd-linux-5.4.43-initrd.efi
+      options: systemConfig=/nix/store/yf411airfpl714q2qa88bcpz9c6f303l-nixos-system-nixos-systemd-20.09pre-git init=/nix/store/yf411airfpl714q2qa88bcpz9c6f303l-nixos-system-nixos-systemd-20.09pre-git/init loglevel=4

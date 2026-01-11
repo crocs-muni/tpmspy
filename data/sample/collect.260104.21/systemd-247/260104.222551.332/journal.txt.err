@@ -1,0 +1,2 @@
+[0;1;38;5;185mJournal file /var/log/journal/d9df4a2f002243b3bb23b2d1b9767068/system@8ad2efe468c84fd4ad543c3ce6d15c94-0000000000007c43-000647950df664c8.journal uses an unsupported feature, ignoring file.[0m
+[0;1;38;5;185mUse SYSTEMD_LOG_LEVEL=debug journalctl --file=/var/log/journal/d9df4a2f002243b3bb23b2d1b9767068/system@8ad2efe468c84fd4ad543c3ce6d15c94-0000000000007c43-000647950df664c8.journal to see the details.[0m

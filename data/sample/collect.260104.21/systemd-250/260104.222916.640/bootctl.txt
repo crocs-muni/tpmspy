@@ -1,0 +1,49 @@
+System:
+     Firmware: UEFI 2.70 (EDK II 1.00)
+  Secure Boot: disabled (setup)
+ TPM2 Support: yes
+ Boot into FW: supported
+
+Current Boot Loader:
+      Product: systemd-boot 250.4
+     Features: ✓ Boot counting
+               ✓ Menu timeout control
+               ✓ One-shot menu timeout control
+               ✓ Default entry control
+               ✓ One-shot entry control
+               ✓ Support for XBOOTLDR partition
+               ✓ Support for passing random seed to OS
+               ✓ Load drop-in drivers
+               ✓ Boot loader sets ESP information
+          ESP: /dev/disk/by-partuuid/482f5544-acfc-4c95-86ac-958b12fa1c57
+         File: └─/EFI/systemd/systemd-bootx64.efi
+
+Random Seed:
+ Passed to OS: no
+ System Token: not set
+       Exists: yes
+
+Available Boot Loaders on ESP:
+          ESP: /efi (/dev/disk/by-partuuid/482f5544-acfc-4c95-86ac-958b12fa1c57)
+         File: └─/EFI/systemd/systemd-bootx64.efi (systemd-boot 250.4)
+         File: └─/EFI/BOOT/BOOTX64.EFI (systemd-boot 250.4)
+
+Boot Loaders Listed in EFI Variables:
+        Title: Linux Boot Manager
+           ID: 0x0002
+       Status: active, boot-order
+    Partition: /dev/disk/by-partuuid/482f5544-acfc-4c95-86ac-958b12fa1c57
+         File: └─/EFI/systemd/systemd-bootx64.efi
+
+Boot Loader Entries:
+        $BOOT: /efi (/dev/disk/by-partuuid/482f5544-acfc-4c95-86ac-958b12fa1c57)
+
+Default Boot Loader Entry:
+        title: NixOS
+           id: nixos-generation-1.conf
+       source: /efi/loader/entries/nixos-generation-1.conf
+      version: Generation 1 NixOS 22.11.20220718.1715c13, Linux Kernel 5.15.55, Built on 2025-12-30
+   machine-id: d9df4a2f002243b3bb23b2d1b9767068
+        linux: /efi/nixos/hvjp09gbid596x47agzq7gclbgfx2n4m-linux-5.15.55-bzImage.efi
+       initrd: /efi/nixos/s9vhrv3qgigj17pqjpzy2jbk04zw95qv-initrd-linux-5.15.55-initrd.efi
+      options: init=/nix/store/iaz1vwm53pqwfxj7mqnj7ljl62sf53vz-nixos-system-nixos-systemd-22.11.20220718.1715c13/init loglevel=4

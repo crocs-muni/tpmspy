@@ -1,0 +1,428 @@
+---
+version: 1
+events:
+- EventNum: 0
+  PCRIndex: 0
+  EventType: EV_NO_ACTION
+  Digest: "0000000000000000000000000000000000000000"
+  EventSize: 33
+  SpecID:
+  - Signature: Spec ID Event03
+    platformClass: 0
+    specVersionMinor: 0
+    specVersionMajor: 2
+    specErrata: 0
+    uintnSize: 2
+    numberOfAlgorithms: 1
+    Algorithms:
+    - Algorithm[0]:
+      algorithmId: sha256
+      digestSize: 32
+    vendorInfoSize: 0
+- EventNum: 1
+  PCRIndex: 0
+  EventType: EV_S_CRTM_VERSION
+  DigestCount: 1
+  Digests:
+  - AlgorithmId: sha256
+    Digest: "96a296d224f285c67bee93c30f8a309157f0daa35dc5b87e410b78630a09cfc7"
+  EventSize: 2
+  Event: "0000"
+- EventNum: 2
+  PCRIndex: 0
+  EventType: EV_EFI_PLATFORM_FIRMWARE_BLOB
+  DigestCount: 1
+  Digests:
+  - AlgorithmId: sha256
+    Digest: "88ee79a2a30c3d0ce31be44258f1189145f54970abd0b7be8f0dfc65c8710b34"
+  EventSize: 16
+  Event:
+    BlobBase: 0x820000
+    BlobLength: 0xe0000
+- EventNum: 3
+  PCRIndex: 0
+  EventType: EV_EFI_PLATFORM_FIRMWARE_BLOB
+  DigestCount: 1
+  Digests:
+  - AlgorithmId: sha256
+    Digest: "1d2c89eaa805666dbe37109334f8353f0d7759aaf247a29ff17cbe00b7659905"
+  EventSize: 16
+  Event:
+    BlobBase: 0x900000
+    BlobLength: 0xe80000
+- EventNum: 4
+  PCRIndex: 7
+  EventType: EV_EFI_VARIABLE_DRIVER_CONFIG
+  DigestCount: 1
+  Digests:
+  - AlgorithmId: sha256
+    Digest: "115aa827dbccfb44d216ad9ecfda56bdea620b860a94bed5b7a27bba1c4d02d8"
+  EventSize: 53
+  Event:
+    VariableName: 8be4df61-93ca-11d2-aa0d-00e098032b8c
+    UnicodeNameLength: 10
+    VariableDataLength: 1
+    UnicodeName: SecureBoot
+    VariableData: "00"
+- EventNum: 5
+  PCRIndex: 7
+  EventType: EV_EFI_VARIABLE_DRIVER_CONFIG
+  DigestCount: 1
+  Digests:
+  - AlgorithmId: sha256
+    Digest: "dea7b80ab53a3daaa24d5cc46c64e1fa9ffd03739f90aadbd8c0867c4a5b4890"
+  EventSize: 36
+  Event:
+    VariableName: 8be4df61-93ca-11d2-aa0d-00e098032b8c
+    UnicodeNameLength: 2
+    VariableDataLength: 0
+    UnicodeName: PK
+- EventNum: 6
+  PCRIndex: 7
+  EventType: EV_EFI_VARIABLE_DRIVER_CONFIG
+  DigestCount: 1
+  Digests:
+  - AlgorithmId: sha256
+    Digest: "e670e121fcebd473b8bc41bb801301fc1d9afa33904f06f7149b74f12c47a68f"
+  EventSize: 38
+  Event:
+    VariableName: 8be4df61-93ca-11d2-aa0d-00e098032b8c
+    UnicodeNameLength: 3
+    VariableDataLength: 0
+    UnicodeName: KEK
+- EventNum: 7
+  PCRIndex: 7
+  EventType: EV_EFI_VARIABLE_DRIVER_CONFIG
+  DigestCount: 1
+  Digests:
+  - AlgorithmId: sha256
+    Digest: "baf89a3ccace52750c5f0128351e0422a41597a1adfd50822aa363b9d124ea7c"
+  EventSize: 36
+  Event:
+    VariableName: d719b2cb-3d3a-4596-a3bc-dad00e67656f
+    UnicodeNameLength: 2
+    VariableDataLength: 0
+    UnicodeName: db
+- EventNum: 8
+  PCRIndex: 7
+  EventType: EV_EFI_VARIABLE_DRIVER_CONFIG
+  DigestCount: 1
+  Digests:
+  - AlgorithmId: sha256
+    Digest: "9f75b6823bff6af1024a4e2036719cdd548d3cbc2bf1de8e7ef4d0ed01f94bf9"
+  EventSize: 38
+  Event:
+    VariableName: d719b2cb-3d3a-4596-a3bc-dad00e67656f
+    UnicodeNameLength: 3
+    VariableDataLength: 0
+    UnicodeName: dbx
+- EventNum: 9
+  PCRIndex: 7
+  EventType: EV_SEPARATOR
+  DigestCount: 1
+  Digests:
+  - AlgorithmId: sha256
+    Digest: "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119"
+  EventSize: 4
+  Event: "00000000"
+- EventNum: 10
+  PCRIndex: 1
+  EventType: EV_PLATFORM_CONFIG_FLAGS
+  DigestCount: 1
+  Digests:
+  - AlgorithmId: sha256
+    Digest: "2583324d572a3c5f51d5de79046dae645268e46f565ebcb2fdda8d8aade15e42"
+  EventSize: 9
+  Event: "414350492044415441"
+- EventNum: 11
+  PCRIndex: 1
+  EventType: EV_PLATFORM_CONFIG_FLAGS
+  DigestCount: 1
+  Digests:
+  - AlgorithmId: sha256
+    Digest: "e83b592e0adbbba1358180f3b2242593d89e75bc4277468a88950178df5e3865"
+  EventSize: 9
+  Event: "414350492044415441"
+- EventNum: 12
+  PCRIndex: 1
+  EventType: EV_PLATFORM_CONFIG_FLAGS
+  DigestCount: 1
+  Digests:
+  - AlgorithmId: sha256
+    Digest: "de2f256064a0af797747c2b97505dc0b9f3df0de4f489eac731c23ae9ca9cc31"
+  EventSize: 9
+  Event: "414350492044415441"
+- EventNum: 13
+  PCRIndex: 1
+  EventType: EV_PLATFORM_CONFIG_FLAGS
+  DigestCount: 1
+  Digests:
+  - AlgorithmId: sha256
+    Digest: "98953c7ca6ecac746f3331c20e59e22c6f3c74871c207d04f716823db4e2d88f"
+  EventSize: 9
+  Event: "414350492044415441"
+- EventNum: 14
+  PCRIndex: 2
+  EventType: EV_EFI_BOOT_SERVICES_DRIVER
+  DigestCount: 1
+  Digests:
+  - AlgorithmId: sha256
+    Digest: "4019aabdc583879c8a95b2c00c15142911ac6fba9925aacde7b51b925ac23f52"
+  EventSize: 84
+  Event:
+    ImageLocationInMemory: 0x7d74f018
+    ImageLengthInMemory: 154528
+    ImageLinkTimeAddress: 0x0
+    LengthOfDevicePath: 52
+    DevicePath: '02010c00d041030a000000000101060000020101060000000408180000000000000e010000000000ff730200000000007fff0400'
+- EventNum: 15
+  PCRIndex: 1
+  EventType: EV_EFI_VARIABLE_BOOT
+  DigestCount: 1
+  Digests:
+  - AlgorithmId: sha256
+    Digest: "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450"
+  EventSize: 54
+  Event:
+    VariableName: 8be4df61-93ca-11d2-aa0d-00e098032b8c
+    UnicodeNameLength: 9
+    VariableDataLength: 4
+    UnicodeName: BootOrder
+    VariableData: "01000000"
+- EventNum: 16
+  PCRIndex: 1
+  EventType: EV_EFI_VARIABLE_BOOT
+  DigestCount: 1
+  Digests:
+  - AlgorithmId: sha256
+    Digest: "583ecc5304a57951b1ce7806995b869e6aa5e467e31c4fbf43c9242d9cbd39c6"
+  EventSize: 208
+  Event:
+    VariableName: 8be4df61-93ca-11d2-aa0d-00e098032b8c
+    UnicodeNameLength: 8
+    VariableDataLength: 160
+    UnicodeName: Boot0001
+    VariableData: "0100000074004c0069006e0075007800200042006f006f00740020004d0061006e006100670065007200000004012a00010000000008000000000000000010000000000023fbffe2763e124b8d89a6f75abc579f0202040446005c004500460049005c00730079007300740065006d0064005c00730079007300740065006d0064002d0062006f006f0074007800360034002e0065006600690000007fff0400"
+- EventNum: 17
+  PCRIndex: 1
+  EventType: EV_EFI_VARIABLE_BOOT
+  DigestCount: 1
+  Digests:
+  - AlgorithmId: sha256
+    Digest: "3197be1e300fa1600d1884c3a4bd4a90a15405bfb546cf2e6cf6095f8c362a93"
+  EventSize: 110
+  Event:
+    VariableName: 8be4df61-93ca-11d2-aa0d-00e098032b8c
+    UnicodeNameLength: 8
+    VariableDataLength: 62
+    UnicodeName: Boot0000
+    VariableData: "090100002c0055006900410070007000000004071400c9bdb87cebf8344faaea3ee4af6516a10406140021aa2c4614760345836e8ab6f46623317fff0400"
+- EventNum: 18
+  PCRIndex: 4
+  EventType: EV_EFI_ACTION
+  DigestCount: 1
+  Digests:
+  - AlgorithmId: sha256
+    Digest: "3d6772b4f84ed47595d72a2c4c5ffd15f5bb72c7507fe26f2aaee2c69d5633ba"
+  EventSize: 40
+  Event: |-
+    Calling EFI Application from Boot Option
+- EventNum: 19
+  PCRIndex: 0
+  EventType: EV_SEPARATOR
+  DigestCount: 1
+  Digests:
+  - AlgorithmId: sha256
+    Digest: "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119"
+  EventSize: 4
+  Event: "00000000"
+- EventNum: 20
+  PCRIndex: 1
+  EventType: EV_SEPARATOR
+  DigestCount: 1
+  Digests:
+  - AlgorithmId: sha256
+    Digest: "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119"
+  EventSize: 4
+  Event: "00000000"
+- EventNum: 21
+  PCRIndex: 2
+  EventType: EV_SEPARATOR
+  DigestCount: 1
+  Digests:
+  - AlgorithmId: sha256
+    Digest: "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119"
+  EventSize: 4
+  Event: "00000000"
+- EventNum: 22
+  PCRIndex: 3
+  EventType: EV_SEPARATOR
+  DigestCount: 1
+  Digests:
+  - AlgorithmId: sha256
+    Digest: "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119"
+  EventSize: 4
+  Event: "00000000"
+- EventNum: 23
+  PCRIndex: 4
+  EventType: EV_SEPARATOR
+  DigestCount: 1
+  Digests:
+  - AlgorithmId: sha256
+    Digest: "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119"
+  EventSize: 4
+  Event: "00000000"
+- EventNum: 24
+  PCRIndex: 5
+  EventType: EV_SEPARATOR
+  DigestCount: 1
+  Digests:
+  - AlgorithmId: sha256
+    Digest: "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119"
+  EventSize: 4
+  Event: "00000000"
+- EventNum: 25
+  PCRIndex: 6
+  EventType: EV_SEPARATOR
+  DigestCount: 1
+  Digests:
+  - AlgorithmId: sha256
+    Digest: "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119"
+  EventSize: 4
+  Event: "00000000"
+- EventNum: 26
+  PCRIndex: 5
+  EventType: EV_EFI_GPT_EVENT
+  DigestCount: 1
+  Digests:
+  - AlgorithmId: sha256
+    Digest: "873cbaf6d2210d4bb5f807c659953a96274e9bff066ea0de332b0f0cc36c5269"
+  EventSize: 356
+  Event: "4546492050415254000001005c000000ddc1d22c000000000100000000000000ffffff1f000000000008000000000000deffff1f000000005855f69b98d6884fa3b70999420f4b1e020000000000000080000000800000006ebbf247020000000000000028732ac11ff8d211ba4b00a0c93ec93b23fbffe2763e124b8d89a6f75abc579f0008000000000000ff071000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000af3dc60f838472478e793d69d8477de4b9e0f0b4e4c67f448540450e96f212950008100000000000fff7ff1f000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+- EventNum: 27
+  PCRIndex: 4
+  EventType: EV_EFI_BOOT_SERVICES_APPLICATION
+  DigestCount: 1
+  Digests:
+  - AlgorithmId: sha256
+    Digest: "ea9649f99f36435223cac121b8579d7ae62059504c73381d8ffc8f0c7d84f7a2"
+  EventSize: 176
+  Event:
+    ImageLocationInMemory: 0x7d050018
+    ImageLengthInMemory: 153848
+    ImageLinkTimeAddress: 0x101300000
+    LengthOfDevicePath: 144
+    DevicePath: '02010c00d041030a0000000001010600021f03120a000200ffff000004012a00010000000008000000000000000010000000000023fbffe2763e124b8d89a6f75abc579f0202040446005c004500460049005c00730079007300740065006d0064005c00730079007300740065006d0064002d0062006f006f0074007800360034002e0065006600690000007fff0400'
+- EventNum: 28
+  PCRIndex: 5
+  EventType: EV_EVENT_TAG
+  DigestCount: 1
+  Digests:
+  - AlgorithmId: sha256
+    Digest: "a64bcf1ca2d55bd0df700d9cc38106fb5ac3a244a2aaa5084119bc56250f4af0"
+  EventSize: 32
+  Event: "2a58bcf5180000006c006f0061006400650072002e0063006f006e0066000000"
+- EventNum: 29
+  PCRIndex: 4
+  EventType: EV_EFI_BOOT_SERVICES_APPLICATION
+  DigestCount: 1
+  Digests:
+  - AlgorithmId: sha256
+    Digest: "f4133f7062d5331bd80562b7daca7d2e95b3e21f74b33bd94f743492af23d452"
+  EventSize: 284
+  Event:
+    ImageLocationInMemory: 0x7d034018
+    ImageLengthInMemory: 150264
+    ImageLinkTimeAddress: 0x140000000
+    LengthOfDevicePath: 252
+    DevicePath: '02010c00d041030a0000000001010600021f03120a000200ffff000004012a00010000000008000000000000000010000000000023fbffe2763e124b8d89a6f75abc579f02020404b2005c004500460049005c004c0069006e00750078005c006e00690078006f0073002d00670065006e00650072006100740069006f006e002d0031002d006a006500760075006d006600690033006e00370073006d006a006f006900670071007a003200690074006c00370033006300370061006a00760074006e006c0061007400330074006d0034006a006a006a0033006e0075007a006c0034006b0035007700700061002e0065006600690000007fff0400'
+- EventNum: 30
+  PCRIndex: 11
+  EventType: EV_IPL
+  DigestCount: 1
+  Digests:
+  - AlgorithmId: sha256
+    Digest: "842ec4a6b9d06d94f62d7dbf75eac09f4b4bf7620c3b02414070fb8e4f1df8c0"
+  EventSize: 12
+  Event:
+    String: ".\0o\0s\0r\0e\0l\0"
+- EventNum: 31
+  PCRIndex: 11
+  EventType: EV_IPL
+  DigestCount: 1
+  Digests:
+  - AlgorithmId: sha256
+    Digest: "2f87793b6e336418a301b8642371f738859514ebb10b100009384b861391b5e9"
+  EventSize: 16
+  Event:
+    String: ".\0c\0m\0d\0l\0i\0n\0e\0"
+- EventNum: 32
+  PCRIndex: 11
+  EventType: EV_IPL
+  DigestCount: 1
+  Digests:
+  - AlgorithmId: sha256
+    Digest: "6520633fde219f22f572b85cd1dabe108a027d9db54c62120a6eb0a078bca5c2"
+  EventSize: 14
+  Event:
+    String: ".\0i\0n\0i\0t\0r\0d\0"
+- EventNum: 33
+  PCRIndex: 11
+  EventType: EV_IPL
+  DigestCount: 1
+  Digests:
+  - AlgorithmId: sha256
+    Digest: "f7d92ee0e716fef8a793e4e837a73db871eb81da9ae24c11206f765bd1a15472"
+  EventSize: 12
+  Event:
+    String: ".\0l\0i\0n\0u\0x\0"
+- EventNum: 34
+  PCRIndex: 9
+  EventType: EV_EVENT_TAG
+  DigestCount: 1
+  Digests:
+  - AlgorithmId: sha256
+    Digest: "a02c2be141ce0e711017ad89f4695040ad71e2a00eb0523eb7ac91a2e21eac1c"
+  EventSize: 34
+  Event: "ed223b8f1a0000004c4f414445445f494d4147453a3a4c6f61644f7074696f6e7300"
+- EventNum: 35
+  PCRIndex: 9
+  EventType: EV_EVENT_TAG
+  DigestCount: 1
+  Digests:
+  - AlgorithmId: sha256
+    Digest: "8a066800e871e8f7be134ec21f225c10b692f9fe1fcde0b84a9764000233e4c1"
+  EventSize: 21
+  Event: "ec223b8f0d0000004c696e757820696e6974726400"
+- EventNum: 36
+  PCRIndex: 5
+  EventType: EV_EFI_ACTION
+  DigestCount: 1
+  Digests:
+  - AlgorithmId: sha256
+    Digest: "d8043d6b7b85ad358eb3b6ae6a873ab7ef23a26352c5dc4faa5aeedacf5eb41b"
+  EventSize: 29
+  Event: |-
+    Exit Boot Services Invocation
+- EventNum: 37
+  PCRIndex: 5
+  EventType: EV_EFI_ACTION
+  DigestCount: 1
+  Digests:
+  - AlgorithmId: sha256
+    Digest: "b54f7542cbd872a81a9d9dea839b2b8d747c7ebd5ea6615c40f42f44a6dbeba0"
+  EventSize: 40
+  Event: |-
+    Exit Boot Services Returned with Success
+pcrs:
+  sha256:
+    0  : 0x598b6c3e37122c4c4ce6f5dfc7888cf7c86c28e8ae2eeb7cd3748f1d0b929109
+    1  : 0xc59f8450701ce3865ffcf2d06bb07714d76a105683b0ca2fa3096f8370dd3557
+    2  : 0x0c086a8ba21bf3cbeee845770a92c2131a00e79a981b035cb65407e97f5a870c
+    3  : 0x3d458cfe55cc03ea1f443f1562beec8df51c75e14a9fcf9a7234a13f198e7969
+    4  : 0x349ed12dc884c5bca5196ecc12e6e2ce9e48f31a386e1332f1543529e33bef25
+    5  : 0x9a98198f79192465b8f7a2e44c23f60117089ae5b3165c3e495ce18aeb5a0b94
+    6  : 0x3d458cfe55cc03ea1f443f1562beec8df51c75e14a9fcf9a7234a13f198e7969
+    7  : 0x65caf8dd1e0ea7a6347b635d2b379c93b9a1351edc2afc3ecda700e534eb3068
+    9  : 0x4d05e65d297320edafc6a4ace4bde1287a8fe3e559be04f2096abfa58c8a4404
+    11 : 0x39b2b4598dc7b45ed709976034bc825279353cc5de4651310f2963df94abd133

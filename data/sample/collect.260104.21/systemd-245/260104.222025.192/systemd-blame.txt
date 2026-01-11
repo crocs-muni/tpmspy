@@ -1,0 +1,34 @@
+6.092s dhcpcd.service                    
+1.387s systemd-udev-settle.service       
+ 751ms firewall.service                  
+ 665ms dev-phoenix-root.device           
+ 393ms systemd-journal-flush.service     
+ 351ms systemd-timesyncd.service         
+ 292ms systemd-journald.service          
+ 159ms systemd-udevd.service             
+ 147ms systemd-modules-load.service      
+ 144ms systemd-fsck@dev-vda1.service     
+ 129ms systemd-logind.service            
+ 122ms efi.mount                         
+ 102ms resolvconf.service                
+  58ms systemd-udev-trigger.service      
+  36ms user@0.service                    
+  27ms systemd-tmpfiles-setup.service    
+  24ms network-setup.service             
+  20ms systemd-remount-fs.service        
+  19ms kmod-static-nodes.service         
+  15ms systemd-tmpfiles-setup-dev.service
+  15ms systemd-random-seed.service       
+  13ms dev-hugepages.mount               
+  13ms sys-kernel-debug.mount            
+  13ms dev-mqueue.mount                  
+   9ms audit.service                     
+   7ms systemd-update-utmp.service       
+   6ms systemd-sysctl.service            
+   4ms nscd.service                      
+   4ms user-runtime-dir@0.service        
+   4ms systemd-user-sessions.service     
+   3ms sys-fs-fuse-connections.mount     
+   3ms sshd.service                      
+   2ms network-local-commands.service    
+   1ms boot.mount                        
