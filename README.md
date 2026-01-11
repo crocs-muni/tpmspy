@@ -187,7 +187,14 @@ Captured data are stored in `data/$cfg_traces_dst/$FLAKE/$ID` where `$cfg_traces
 
 ### Sample data
 
-Directory `data/samples` contains small sample (~100 MiB) of captures with generated graphs, some of which are in the paper.
+Directory `data/sample` contains small sample (~100 MiB) of captures with generated graphs, some of which are in the paper.
+
+* `data/sample/collect.260104.21`: 5 captures of each systemd version.
+* `data/sample/collect.notpm.260105.22`: 1 capture of systemd v250 without TPM support.
+* `data/sample/collect.crypt.260105.23`: 2 captures of the encrypted volume setup; with and without systemd-cryptsetup PCR 15 extend.
+
+The samples are complete, except `journal.json` (systemd-journald JSON export) files were removed to decrease the size of the repository.
+The `journal.txt` (systemd-journald text export) files are much smaller and retained in the samples.
 
 ### Data analysis and graphs
 
