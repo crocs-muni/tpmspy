@@ -10,9 +10,9 @@ TPMSpy is a software TPM interposer that allows capturing communication between 
   * `libvirt` (See officiall manuals for [Ubuntu](https://documentation.ubuntu.com/server/how-to/virtualisation/libvirt/) or [Fedora](https://docs.fedoraproject.org/en-US/quick-docs/virtualization-getting-started/))
   * [`swtpm`](https://github.com/stefanberger/swtpm) (See [build instructions](https://github.com/stefanberger/swtpm/wiki))
 
-[!TIP]
-The repository provides a `Containerfile` for Podman which contains all the dependencies for building TPMSpy or analysing the captured data.
-Make sure `podman` or `docker` is available on your platform to use it.
+> [!TIP]
+> The repository provides a `Containerfile` for Podman which contains all the dependencies for building TPMSpy or analysing the captured data.
+> Make sure `podman` or `docker` is available on your platform to use it.
 
 * TPMSpy
   * `libbsd`
@@ -45,7 +45,7 @@ Make sure `podman` or `docker` is available on your platform to use it.
 * `systemd-cryptenroll-doc`: Versions of systemd-cryptenroll documentation source.
 * `systemd-news`: Release notes for systemd split by version.
 * `tpmspy`: TPMSpy source code (interposer, swtpm auxiliary binary, capture module, dump utility to convert captures to JSON).
-  
+
 ## Instructions
 
 1. Clone this repository.
@@ -104,10 +104,10 @@ The files can be recreated as follows:
 
 ### Building TPMSpy
 
-[!WARNING]
-While TPMSpy can be built in the podman container, it must be executed on the host system.
-Therefore, either ensure `musl` is installed on the host system, or simply build TPMSpy outside of podman to avoid linking problems.
-Unfortunately, this requires all dependencies to be installed on the host.
+> [!WARNING]
+> While TPMSpy can be built in the podman container, it must be executed on the host system.
+> Therefore, either ensure `musl` is installed on the host system, or simply build TPMSpy outside of podman to avoid linking problems.
+> Unfortunately, this requires all dependencies to be installed on the host.
 
 1. Configure the build system.
    If building on the host system outside of podman, `--prefer-static` can be omitted.
@@ -116,7 +116,7 @@ Unfortunately, this requires all dependencies to be installed on the host.
    podman run --rm -it -v $PWD:/tpmspy \
        meson setup --prefer-static /tpmspy/tpmspy/build /tpmspy/tpmspy
    ```
-   
+
 2. Build the binaries.
 
    ```sh
@@ -142,10 +142,10 @@ Unfortunately, this requires all dependencies to be installed on the host.
 
    The original swtpm should still exist as `/usr/bin/swtpm`.
 
-[!CAUTION]
-If TPMSpy is built or installed incorrectly, virtual machines using TPM may fail to start.
-Try removing TPMSpy in that case and use sample data.
-   
+> [!CAUTION]
+> If TPMSpy is built or installed incorrectly, virtual machines using TPM may fail to start.
+> Try removing TPMSpy in that case and use sample data.
+
 ### Configuring virtual machines
 
 1. Download [NixOS minimal ISO image](https://nixos.org/download/#minimal-iso-image).
