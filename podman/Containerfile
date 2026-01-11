@@ -8,12 +8,13 @@ RUN apk add gcc
 RUN apk add g++
 RUN apk add libev libev-dev
 RUN apk add json-c json-c-dev
-RUN apk add libsodium libsodium-dev
+RUN apk add libsodium libsodium-dev libsodium-static
 RUN apk add linux-headers
 RUN apk add swtpm swtpm-dev
 RUN apk add tpm2-tools
 RUN apk add tpm2-tss tpm2-tss-dev
 RUN apk add libbsd libbsd-dev
+RUN apk add git
 
 # Python
 # https://stackoverflow.com/questions/62554991/how-do-i-install-python-on-alpine-linux
