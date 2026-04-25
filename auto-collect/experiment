@@ -2,7 +2,7 @@
 
 # ‹experiment› -- Manage overall workflow of capturing TPMSpy data
 #
-# 	experiment [-h] [-q] [N]
+# 	experiment [-h] [-q] [-c CONFIG] [N]
 #
 # This script calls other scripts in this directory to collect data:
 #
@@ -23,13 +23,6 @@ script_path=$(readlink -f "$0")
 script_bin=$(dirname "${script_path}")
 script_name=$(basename "${script_path}")
 
-if [ -n "$COLLECT_CONFIG" ]; then
-	echo "export COLLECT_CONFIG=$COLLECT_CONFIG"
-	export COLLECT_CONFIG
-fi
-
-. "$script_bin/common"
-
 
 usage() {
 	echo "usage: ${script_name} [-n]"
@@ -45,11 +38,16 @@ cmd() {
 
 opt_new=
 opt_bel=1
-while getopts "hnq" option; do
+opt_config="$COLLECT_CONFIG"
+
+while getopts "c:hnq" option; do
 	case "${option}" in
 	h)
 		usage
 		exit 0
+		;;
+	c)
+		opt_config="$OPTARG"
 		;;
 	q)
 		opt_bel=0
@@ -70,25 +68,57 @@ if [ "$#" -gt 1 ]; then
 	exit 1
 fi
 
+if [ -n "$opt_config" ]; then
+	if [ ! -f "$opt_config" ]; then
+		warn "$opt_config: No such file or directory"
+		exit 1
+	fi
+
+	if [ ! -r "$opt_config" ]; then
+		warn "$opt_config: File is not readable"
+		exit 1
+	fi
+
+	echo "export COLLECT_CONFIG=$opt_config"
+	export COLLECT_CONFIG="$opt_config"
+fi
+
+. "$script_bin/common"
+
+
 count="${1:-$cfg_default_captures}"
 traces_dst="${cfg_traces_dst}"
 
-printf "\x1b[96m ** \x1b[0m \x1b[1m%s\x1b[0m\n" "Setting up flakes"
-flakes=$("$script_bin"/flakes -k)
+capture_simple() {
+	printf "\x1b[96m ** \x1b[0m \x1b[1m%s\x1b[0m\n" "Simple capture (no Nix flakes)"
+	printf "\x1b[33m |> \x1b[0m Collect \x1b[1m%s\x1b[0m\n" "default"
+	cmd "$script_bin/collect" -o "$traces_dst" "default" "$count"
+}
 
-cmd "$script_bin/setup" -k $flakes
-cmd "$script_bin/restore" -s
+capture_nix() {
+	printf "\x1b[96m ** \x1b[0m \x1b[1m%s\x1b[0m\n" "Setting up flakes"
+	flakes=$("$script_bin"/flakes -k)
 
-for flake in $flakes; do
-	printf "\x1b[33m ~> \x1b[0m Switch \x1b[1m%s\x1b[0m\n" "$flake"
-	cmd "$script_bin/switch" "$flake"
+	cmd "$script_bin/setup" -k $flakes
+	cmd "$script_bin/restore" -s
 
-	printf "\x1b[33m |> \x1b[0m Collect \x1b[1m%s\x1b[0m\n" "$flake"
-	cmd "$script_bin/collect" -o "$traces_dst" "$flake" "$count"
+	for flake in $flakes; do
+		printf "\x1b[33m ~> \x1b[0m Switch \x1b[1m%s\x1b[0m\n" "$flake"
+		cmd "$script_bin/switch" "$flake"
 
-	printf "\x1b[33m ~> \x1b[0m Revert to \x1b[1mdefault\x1b[0m profile\n"
-	cmd "$script_bin/restore"
-done
+		printf "\x1b[33m |> \x1b[0m Collect \x1b[1m%s\x1b[0m\n" "$flake"
+		cmd "$script_bin/collect" -o "$traces_dst" "$flake" "$count"
+
+		printf "\x1b[33m ~> \x1b[0m Revert to \x1b[1mdefault\x1b[0m profile\n"
+		cmd "$script_bin/restore"
+	done
+}
+
+if [ -z "$cfg_flakes" ]; then
+	capture_simple
+else
+	capture_nix
+fi
 
 printf "\x1b[33m ** \x1b[0m Switch \x1b[1m%s\x1b[0m\n" "Convert TPMSpy traces"
 cmd "$script_bin/convert" "$traces_dst"
