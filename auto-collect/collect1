@@ -72,6 +72,8 @@ if virsh_is_running "$p_machine"; then
 	die "$p_machine is running"
 fi
 
+tpmspy_sentinel=$(mktemp -p "$cfg_tpmspy_dir" .tpmspy-sentinel-XXXXXX)
+
 mon_start=$(date '+%s.%6N')
 host_ip=$(virsh_start "$p_machine" "$p_hostname")
 systemd_version=$(run_in_machine "$host_ip" systemctl --version | head -n1| sed 's!systemd \([0-9]\+\).*!systemd-\1!')
@@ -110,8 +112,23 @@ for file in *; do
 	fi
 done
 
-tpmspy_dir=$(find "$cfg_tpmspy_dir" -maxdepth 1 -type d -name 'tpmspy-*' -printf '%T@ %p\n' \
-	| sort -nr | head -n1 | cut -d' ' -f2)
+# Resolve TPMSpy sentinel if possible
+tpmspy_link=$(find "$cfg_tpmspy_dir" -maxdepth 1 -type l -name "tpmspy-*" \
+	-newer "$tpmspy_sentinel" | grep -F -- "$p_machine" | head -1)
+
+if [ -n "$tpmspy_link" ]; then
+	tpmspy_dir=$(readlink -f "$tpmspy_link")
+else
+	tpmspy_dir=$(find "$cfg_tpmspy_dir" -maxdepth 1 -type d -name 'tpmspy-*' \
+		-newer "$tpmspy_sentinel" -printf '%T@ %p\n' \
+		| sort -nr | head -n1 | cut -d' ' -f2)
+
+	if [ -n "$tpmspy_dir" ]; then
+		warn "collect: VM-specific symlink not found; using newest directory"
+	fi
+fi
+
+rm -f "$tpmspy_sentinel"
 
 # Shut down the machine before attempting to copy the captured packets.
 # TPMSpy will also flush and close the file.
@@ -119,14 +136,19 @@ virsh_cmd shutdown "$p_machine"
 wait_for virsh_is_shutdown "$p_machine"
 mon_end=$(date '+%s.%6N')
 
-cp "$tpmspy_dir"/tpmspy.log tpmspy.log
-cp "$tpmspy_dir"/swtpm.log swtpm.log
-
-if [ "$(find "$tpmspy_dir" -maxdepth 1 -name "packets-*.bin" | wc -l)" -eq 1 ]; then
-	cp "$tpmspy_dir"/packets-*.bin tpmspy.bin
+if [ -z "$tpmspy_dir" ]; then
+	warn "collect: No TPMSpy measurement for this run (TPMSpy may be disabled)"
 else
-	echo "collect: Unique packets-01.bin not found, copying all to be sure" >&2
-	cp "$tpmspy_dir"/packets-*.bin .
+	cp "$tpmspy_dir"/tpmspy.log tpmspy.log
+	cp "$tpmspy_dir"/swtpm.log swtpm.log
+	cp "$tpmspy_dir"/monitor.log monitor.log
+
+	if [ "$(find "$tpmspy_dir" -maxdepth 1 -name "packets-*.bin" | wc -l)" -eq 1 ]; then
+		cp "$tpmspy_dir"/packets-*.bin tpmspy.bin
+	else
+		warn "collect: Unique packets-01.bin not found, copying all to be sure"
+		cp "$tpmspy_dir"/packets-*.bin .
+	fi
 fi
 
 echo "$mon_end-$mon_start" |bc >vm_time.txt
