@@ -1,5 +1,9 @@
 #!/bin/sh
 
+if [ -n "$COLLECT_DEBUG" ]; then
+	set -x
+fi
+
 die() {
 	echo "$script_name: $*" >&2
 	exit 1
