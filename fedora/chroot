@@ -1,0 +1,17 @@
+cryptsetup open /dev/vda3 fedora
+
+mount /dev/mapper/fedora -o subvol=root /mnt
+mount /dev/mapper/fedora -o subvol=home /mnt/home
+mount /dev/vda2 /mnt/boot
+mount /dev/vda1 /mnt/boot/efi
+
+mount -t proc /proc /mnt/proc
+mount --rbind /sys /mnt/sys/
+mount --make-rslave /mnt/sys
+mount --rbind /dev /mnt/dev/
+mount --make-rslave /mnt/dev
+
+mount --bind /run /mnt/run
+mount -t tmpfs tmpfs /mnt/tmp
+
+chroot /mnt /bin/bash
