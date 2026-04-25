@@ -72,6 +72,7 @@ if virsh_is_running "$p_machine"; then
 	die "$p_machine is running"
 fi
 
+mon_start=$(date '+%s.%6N')
 host_ip=$(virsh_start "$p_machine" "$p_hostname")
 systemd_version=$(run_in_machine "$host_ip" systemctl --version | head -n1| sed 's!systemd \([0-9]\+\).*!systemd-\1!')
 
@@ -116,6 +117,7 @@ tpmspy_dir=$(find "$cfg_tpmspy_dir" -maxdepth 1 -type d -name 'tpmspy-*' -printf
 # TPMSpy will also flush and close the file.
 virsh_cmd shutdown "$p_machine"
 wait_for virsh_is_shutdown "$p_machine"
+mon_end=$(date '+%s.%6N')
 
 cp "$tpmspy_dir"/tpmspy.log tpmspy.log
 cp "$tpmspy_dir"/swtpm.log swtpm.log
@@ -126,6 +128,8 @@ else
 	echo "collect: Unique packets-01.bin not found, copying all to be sure" >&2
 	cp "$tpmspy_dir"/packets-*.bin .
 fi
+
+echo "$mon_end-$mon_start" |bc >vm_time.txt
 
 cd "$_pwd" || die "cd $_pwd"
 unset _pwd
