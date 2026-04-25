@@ -33,6 +33,7 @@
 
 #include <libgen.h>
 #include <sys/inotify.h>
+#include <sys/resource.h>
 #include <sys/signalfd.h>
 #include <sys/stat.h>
 #include <sys/syscall.h>
@@ -185,11 +186,11 @@ int pidfd_send_signal(int pidfd, int sig, siginfo_t *info, unsigned int flags)
 }
 
 private
-bool _open_to(const char *path, int flags, int target_fd)
+bool _open_to(const char *path, int flags, int mode, int target_fd)
 {
 	bool ok = false;
 
-	int fd = open(path, flags);
+	int fd = open(path, flags, mode);
 	if (fd == -1)
 		warn_jmp(leave, "open(%s)", path);
 
@@ -223,7 +224,7 @@ void _start_swtpm_exec(const char *data_dir, char *argv[])
 		croak("Cannot exec swtpm: open(%s)", log_file);
 
 	/* Redirect stdin. */
-	if (!_open_to("/dev/null", O_RDONLY, STDIN_FILENO)
+	if (!_open_to("/dev/null", O_RDONLY, 0, STDIN_FILENO)
 			|| dup2(log_fd, STDOUT_FILENO) == -1
 			|| dup2(log_fd, STDERR_FILENO) == -1)
 		croak("Cannot exec swtpm: I/O redirection failed");
@@ -361,7 +362,7 @@ void _start_tpmspy_exec(const char *data_dir, const char *swtpm_sock, const char
 		croak("Cannot exec tpmspy: open(%s)", log_file);
 
 	/* Redirect stdin. */
-	if (!_open_to("/dev/null", O_RDONLY, STDIN_FILENO)
+	if (!_open_to("/dev/null", O_RDONLY, 0, STDIN_FILENO)
 			|| dup2(log_fd, STDOUT_FILENO) == -1
 			|| dup2(log_fd, STDERR_FILENO) == -1)
 		croak("Cannot exec tpmspy: I/O redirection failed");
@@ -412,12 +413,21 @@ private
 void _monitor_handle_child(pid_t pid)
 {
 	int wstatus;
-	waitpid(pid, &wstatus, 0);
+	struct rusage usage;
+
+	if (wait4(pid, &wstatus, 0, &usage) == -1) {
+		warn("wait4(%d)\n", pid);
+		return;
+	}
 
 	if (WIFEXITED(wstatus))
 		printf("%d: Exited (%d)\n", pid, WEXITSTATUS(wstatus));
 	else
 		printf("%d: Died (%d)\n", pid, WTERMSIG(wstatus));
+
+	printf("%d: system CPU: %lds %ldμs\n", pid, usage.ru_stime.tv_sec, usage.ru_stime.tv_usec);
+	printf("%d: user CPU: %lds %ldμs\n", pid, usage.ru_utime.tv_sec, usage.ru_utime.tv_usec);
+	printf("%d: maxrss: %ld\n", pid, usage.ru_maxrss);
 }
 
 private
@@ -508,6 +518,36 @@ restore_sigmask:
 }
 
 private
+void _link_data_dir(const char *data_dir, const char *qemu_sock)
+{
+	char *sock_copy = strdup(qemu_sock);
+	if (sock_copy == nullptr) {
+		warn("_link_data_dir: strdup()");
+		return;
+	}
+
+	char *sock_base = basename(sock_copy);
+
+	char *ext = strrchr(sock_base, '.');
+	if (ext != nullptr && strcmp(ext, ".sock") == 0)
+		*ext = '\0';
+
+	char link_path[PATH_MAX];
+	if (snprintf(link_path, sizeof(link_path), "/var/tmp/tpmspy-%s", sock_base) >= (int) sizeof(link_path)) {
+		warn_jmp(cleanup, "_link_data_dir: Link path too long");
+	}
+
+	if (unlink(link_path) != 0 && errno != ENOENT)
+		warn("_link_data_dir: unlink(%s)", link_path);
+
+	if (symlink(data_dir, link_path) == -1)
+		warn("_link_data_dir: symlink(%s, %s)", data_dir, link_path);
+
+cleanup:
+	free(sock_copy);
+}
+
+private
 bool _create_data_dir(size_t path_size, char path[path_size])
 {
 	time_t epoch = time(nullptr);
@@ -526,6 +566,20 @@ bool _create_data_dir(size_t path_size, char path[path_size])
 		warn("chmod()");
 
 	return true;
+}
+
+private
+void _setup_log(const char *data_dir)
+{
+	/* Open a log file for the monitor. */
+	char log_file[PATH_MAX];
+
+	if (snprintf(log_file, sizeof(log_file), "%s/monitor.log", data_dir) >= (int) sizeof(log_file))
+		die("Monitor path too long");
+
+	if (!_open_to(log_file, O_WRONLY | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH, STDOUT_FILENO)
+			|| dup2(STDOUT_FILENO, STDERR_FILENO) == -1)
+		warn("Log I/O redirection failed");
 }
 
 #if !defined(GNU_SHENANIGANS) || GNU_SHENANIGANS
@@ -561,12 +615,18 @@ int main(int argc, char *argv[])
 	if (!replace_swtpm_socket(data_dir, &argv[unixio_arg]))
 		die("Cannot replace arguments for swtpm");
 
+	_setup_log(data_dir);
+	_link_data_dir(data_dir, qemu_sock);
+
 	/* ‹qemu_sock› is the original path, extract the new one. */
 	char *swtpm_sock = extract_socket_path(argv[unixio_arg]);
 	pid_t swtpm_pid = start_swtpm(argc, argv, data_dir, swtpm_sock);
 
 	if (swtpm_pid == -1)
 		warn_jmp(cleanup_paths, "Cannot start swtpm");
+
+	printf("swtpm: socket %s\n", swtpm_sock);
+	printf("swtpm: pid %d\n", swtpm_pid);
 
 	/* 2: Start ‹tpmspy› to bridge (modified) ‹swtpm_sock› now handled
 	 *    by ‹swtpm›, and the original ‹qemu_sock› expected by QEMU. */
@@ -576,9 +636,14 @@ int main(int argc, char *argv[])
 		goto cleanup_paths;
 	}
 
+	printf("tpmspy: socket %s (qemu)\n", qemu_sock);
+	printf("tpmspy: pid %d\n", tpmspy_pid);
+
 	/* 3: Wait for both processes to exit. On SIGINT or SIGTERM, relay
 	 *    the signals to both processes. */
 	monitor(2, (pid_t[]){ swtpm_pid, tpmspy_pid, -1 });
+
+	printf("Monitored daemons finished\n");
 
 cleanup_paths:
 	free(argv[unixio_arg]);
