@@ -45,6 +45,11 @@ if [ "$#" -ne 0 ]; then
 	exit 1
 fi
 
+if [ -z "$cfg_flakes" ]; then
+	warn "\$cfg_flakes is not configured"
+	exit 1
+fi
+
 if virsh_is_running "$cfg_machine"; then
 	was_running=1
 fi
