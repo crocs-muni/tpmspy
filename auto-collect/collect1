@@ -85,8 +85,10 @@ extract_from_vm "$host_ip" uname.txt uname -r
 extract_from_vm "$host_ip" bootctl.txt bootctl
 extract_from_vm "$host_ip" systemd-version.txt systemctl --version
 extract_from_vm "$host_ip" systemd-pcrs.txt systemd-analyze pcrs
+extract_from_vm "$host_ip" systemd-nvpcrs.txt systemd-analyze nvpcrs
 extract_from_vm "$host_ip" tpm2-log-platform.txt tpm2_eventlog /sys/kernel/security/tpm0/binary_bios_measurements
 extract_from_vm "$host_ip" tpm2-log-systemd.txt cat /run/log/systemd/tpm2-measure.log
+extract_from_vm "$host_ip" tpm2_pccread.txt tpm2_pcrread
 
 # The following are not used for the experiments directly, but data shows that
 # around 10% of runs are consistently delayed by ~20 seconds. This may show us
