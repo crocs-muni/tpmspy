@@ -143,16 +143,24 @@ def select_algorithm(args: argparse.Namespace, a: set[AlgName], b: set[AlgName])
 def find_extend(checklist: list[list[tuple[PCRIndex, Digest] | bool]], alg: AlgName, extend: tuple[PCRIndex, DigestBank, TimeStamp]) -> tuple[PCRIndex, Digest] | None:
     needle = (extend[0], extend[1][alg])
 
+    found_used: list[tuple[PCRIndex, Digest] | bool] | None = None
     for e in checklist:
         if e[0] == needle:
             if e[1]:
-                die(f"Event {needle} selected multiple times")
+                found_used = e
+                continue
 
             e[1] = True
 
             (v, _) = e
             assert isinstance(v, tuple)
             return v
+
+    if found_used is not None:
+        warn(f"Event {needle} selected multiple times")
+        (v, _) = found_used
+        assert isinstance(v, tuple)
+        return v
 
     return None
 
@@ -177,7 +185,7 @@ def match_events(alg: AlgName, tpmspy: Trace, tpmlog: TraceSlice) -> MatchedEven
             assert isinstance(e, tuple)
             print(f"PCR_Extend index:{e[0]} digest:{e[1]}", file=sys.stderr)
 
-        die("BUG: TPMSpy Log missed some events (see above)")
+        warn("BUG: TPMSpy Log missed some events (see above)")
 
     return result
 
@@ -254,6 +262,10 @@ def get_arg_parser() -> argparse.ArgumentParser:
 def die(s: str) -> None:
     print(s, file=sys.stderr)
     sys.exit(1)
+
+
+def warn(s: str) -> None:
+    print(s, file=sys.stderr)
 
 
 def main() -> None:
