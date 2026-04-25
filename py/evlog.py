@@ -28,7 +28,12 @@ def read_yaml(file_name: str) -> dict[str, Any]:
         return data
 
 
-def compare_traces(args: argparse.Namespace, tpmspy: TraceSlice, tpmlog: TraceSlice) -> int:
+def compare_traces(args: argparse.Namespace, tpmspy: TraceSlice, tpmlog: TraceSlice, colour: bool) -> int:
+    rst   = "\x1b[0m"  if colour else ""
+    cyan  = "\x1b[36m" if colour else ""
+    red   = "\x1b[91m" if colour else ""
+    green = "\x1b[92m" if colour else ""
+
     matcher = difflib.SequenceMatcher(None, tpmspy, tpmlog)
 
     opcodes = matcher.get_opcodes()
@@ -46,23 +51,23 @@ def compare_traces(args: argparse.Namespace, tpmspy: TraceSlice, tpmlog: TraceSl
         match tag:
             case "equal":
                 for i in range(i1, i2):
-                    print(f"\x1b[36m  \x1b[0m  {tpmspy[i][0]:3}  {tpmspy[i][1]}")
+                    print(f"{cyan}  {rst}  {tpmspy[i][0]:3}  {tpmspy[i][1]}")
 
             case "delete":
                 for i in range(i1, i2):
-                    print(f"\x1b[91m- \x1b[0m  \x1b[91m{tpmspy[i][0]:3}  {tpmspy[i][1]}\x1b[0m")
+                    print(f"{red}- {rst}  {red}{tpmspy[i][0]:3}  {tpmspy[i][1]}{rst}")
                 mismatch += 1
 
             case "insert":
                 for j in range(j1, j2):
-                    print(f"\x1b[92m +\x1b[0m  \x1b[92m{tpmlog[j][0]:3}  {tpmlog[j][1]}\x1b[0m")
+                    print(f"{green} +{rst}  {green}{tpmlog[j][0]:3}  {tpmlog[j][1]}{rst}")
                 mismatch += 1
 
             case "replace":
                 for i in range(i1, i2):
-                    print(f"\x1b[91m- \x1b[0m  \x1b[91m{tpmspy[i][0]:3}  {tpmspy[i][1]}\x1b[0m")
+                    print(f"{red}- {rst}  {red}{tpmspy[i][0]:3}  {tpmspy[i][1]}{rst}")
                 for j in range(j1, j2):
-                    print(f"\x1b[92m +\x1b[0m  \x1b[92m{tpmlog[j][0]:3}  {tpmlog[j][1]}\x1b[0m")
+                    print(f"{green} +{rst}  {green}{tpmlog[j][0]:3}  {tpmlog[j][1]}{rst}")
 
                 mismatch += 1
 
@@ -84,6 +89,7 @@ def get_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("tpmev", help="TPM Event Log")
     parser.add_argument("--algorithms", "-A", action="store_true", help="Instead of comparing hashes, list all algorithms")
     parser.add_argument("--verbose", "-v", action="store_true", help="Show full differences with equal sections")
+    parser.add_argument("--colour", choices=["auto", "yes", "no"], default="auto", help="Colour output (default: auto)")
     return parser
 
 
@@ -93,6 +99,8 @@ def main() -> None:
 
     tpmspy = tpmspy_trace_open(args.tpmspy)
     tpmlog = event_log_open(args.tpmev)
+
+    colour = args.colour == "yes" or (args.colour == "auto" and sys.stdout.isatty())
 
     if args.algorithms:
         query_algorithms(tpmspy, tpmlog)
@@ -109,7 +117,7 @@ def main() -> None:
             continue
 
         print(f"----- {alg} -----")
-        mismatch += compare_traces(args, tpmspy.select_digests(alg), tpmlog.select_digests(alg))
+        mismatch += compare_traces(args, tpmspy.select_digests(alg), tpmlog.select_digests(alg), colour)
 
     sys.exit(0 if mismatch == 0 else 1)
 
