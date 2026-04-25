@@ -34,12 +34,19 @@ virsh_is_shutdown() {
 }
 
 wait_for() {
+	counter=0
 	while true; do
 		rv=$("$@")
 
 		if [ -n "$rv" ]; then
 			echo "$rv"
 			return
+		fi
+
+		counter=$((counter + 1))
+
+		if [ "$counter" -gt 60 ]; then
+			die "$@: Timeout"
 		fi
 
 		sleep 1
