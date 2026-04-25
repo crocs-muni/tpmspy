@@ -28,7 +28,7 @@ find_dump() {
 
 	# Last resort -- try looking everywhere
 	if ! find "$script_bin/.." -type f -name dump -executable | head -n1 | grep '^'; then
-		echo "No dump executable found" >&2
+		warn "No dump executable found"
 		exit 1
 	fi
 }
@@ -65,7 +65,7 @@ find "$dir" -type f -name 'tpmspy.bin' -printf '%P\n' | while read -r source; do
 		"$dump_bin" --json "$dir/$source" >"$dir/$target"
 
 		if [ -f "$dir/$target" ] && ! [ -s "$dir/$target" ]; then
-			echo "$dir/$target: File is empty" >&2
+			warn "$dir/$target: File is empty"
 			unlink "$dir/$target"
 		fi
 	fi

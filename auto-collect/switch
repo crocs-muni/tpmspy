@@ -49,7 +49,7 @@ flake="$1"
 host_ip=$(virsh_start "$cfg_machine" "$cfg_hostname")
 
 if ! run_in_machine "$host_ip" test -L "${cfg_flakes}/r/${flake}"; then
-	echo "$flake is not built" >&2
+	warn "$flake is not built"
 	exit 1
 fi
 
