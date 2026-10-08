@@ -1,6 +1,22 @@
 # TPMSpy
 
-This repository contains sources and example data for *TPMSpy: Validation of Measured Boot Systems by Low-Level Tracing of TPM Usage*.
+This repository contains sources and example data for [*TPMSpy: Validation of Measured Boot Systems by Low-Level Tracing of TPM Usage*](https://link.springer.com/chapter/10.1007/978-3-032-38692-2_32), published in October 2026.
+If you find this tool useful, please consider citing our work:
+
+```bib
+@InProceedings{2027-esorics-tpmspy,
+    author={Lacko, Roman and {\v{S}}venda, Petr},
+    editor={Spognardi, Angelo and Sun, Kun and De Gaspari, Fabio and Mancini, Luigi V.},
+    title={TPMSpy: Validation of Measured Boot Systems by Low-Level Tracing of TPM Usage},
+    booktitle={Computer Security -- ESORICS 2026},
+    year={2027},
+    publisher={Springer Nature Switzerland},
+    address={Cham},
+    pages={642--661},
+    isbn={978-3-032-38692-2},
+    doi={10.1007/978-3-032-38692-2_32}
+}
+```
 
 TPMSpy is a software TPM interposer that allows capturing communication between a virtualized system in QEMU and a software TPM.
 
